@@ -1,6 +1,8 @@
 package wuliu_j.play;
 
 import com.fasterxml.jackson.jr.ob.JSON;
+import wuliu_j.model.Metadata;
+import wuliu_j.model.Simplemeta;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,12 +16,20 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         String metaJson = readJsonFile();
-        Map<String,Object> metadata = JSON.std.mapFrom(metaJson);
-        System.out.println(metadata);
+        Map<String,Object> data = JSON.std.mapFrom(metaJson);
+        Simplemeta meta = Metadata.of(data).toSimple();
+        writeSimplemeta(meta);
     }
 
     static String readJsonFile() throws IOException {
         Path jsonFile = Path.of(METADATA, JSON_FILENAME);
         return Files.readString(jsonFile);
+    }
+
+    static void writeSimplemeta(Simplemeta meta) throws IOException {
+        Path filePath = Path.of(SIMPLEMETA, JSON_FILENAME);
+        System.out.printf("write %s", filePath);
+        JSON.std.with(JSON.Feature.PRETTY_PRINT_OUTPUT)
+                .write(meta.toMap(), filePath.toFile());
     }
 }
