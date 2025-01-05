@@ -1,11 +1,20 @@
 package wuliu_j.model;
 
+import wuliu_j.util.MyUtil;
+
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 
 public class Metadata extends Simplemeta {
     List<String> keywords;
     List<String> collections;
     List<String> albums;
+
+    public static Metadata fromJsonFile(Path jsonPath) throws IOException {
+        Map<String,Object> data = MyUtil.readJsonFileToMap(jsonPath);
+        return of(data);
+    }
 
     public static Metadata of(Map<String,Object> data) {
         Metadata meta = new Metadata();
@@ -46,7 +55,7 @@ public class Metadata extends Simplemeta {
         words.addAll(this.albums);
         List<String> wordList = new ArrayList<>(words);
         String notes = String.join(", ", wordList);
-        String label = String.format("%s | %s", this.label, this.notes);
+        String label = (this.label + " " + this.notes).strip();
 
         Simplemeta simple = new Simplemeta();
         simple.id = this.id;
