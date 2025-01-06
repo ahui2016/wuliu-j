@@ -1,8 +1,8 @@
 package wuliu_j.play;
 
 import com.fasterxml.jackson.jr.ob.JSON;
-import wuliu_j.model.Metadata;
-import wuliu_j.model.Simplemeta;
+import wuliu_j.common.Metadata;
+import wuliu_j.common.Simplemeta;
 
 import java.io.IOException;
 import java.nio.file.Files;

@@ -1,15 +1,16 @@
-package wuliu_j.util;
+package wuliu_j.common;
 
 import com.fasterxml.jackson.jr.ob.JSON;
-import wuliu_j.model.Simplemeta;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 
 public class MyUtil {
+    public static final Path SIMPLEMETA_PATH = Path.of("simplemeta");
 
     /**
      * 確保 folder 存在, 如果不存在或有同名檔案, 則拋出異常。
@@ -41,5 +42,25 @@ public class MyUtil {
 
     public static void writeJsonToFilePretty(Map<String,Object> map, File file) throws IOException {
         JSON.std.with(JSON.Feature.PRETTY_PRINT_OUTPUT).write(map, file);
+    }
+
+    public static Long getLongFromMap(Map<String,Object> map, String key) {
+        Number n = (Number) map.get(key);
+        return n.longValue();
+    }
+
+    public static Integer getIntFromMap(Map<String,Object> map, String key) {
+        Number n = (Number) map.get(key);
+        return n.intValue();
+    }
+
+    static List<String> getStrListFromMap(Map<String,Object> data, String key) {
+        Object obj = data.get(key);
+        if (obj instanceof List<?>) {
+            @SuppressWarnings("unchecked")
+            var list = (List<String>) obj;
+            return list;
+        }
+        throw new RuntimeException(String.format("%s is not a string list", key));
     }
 }

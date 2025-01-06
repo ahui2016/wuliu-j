@@ -1,13 +1,15 @@
 package wuliu_j.tools;
 
-import wuliu_j.model.Metadata;
-import wuliu_j.model.Simplemeta;
-import wuliu_j.util.MyUtil;
+import wuliu_j.common.Metadata;
+import wuliu_j.common.Simplemeta;
+import wuliu_j.common.MyUtil;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import static wuliu_j.common.MyUtil.SIMPLEMETA_PATH;
 
 /**
  * Convert json file in metadata folder to simplemeta folder.
@@ -15,15 +17,13 @@ import java.nio.file.Path;
  * 注意: simplemeta 資料來內已存在的 json 檔案會被忽略, 不會被覆蓋。
  */
 public class MetaToSimple {
-    private static final Path METADATA_PATH = Path.of("metadata");
-    private static final Path SIMPLEMETA_PATH = Path.of("simplemeta");
-
     public static void main(String[] args) {
-        MyUtil.folderMustExists(METADATA_PATH);
+        final Path metadataPath = Path.of("metadata");
+        MyUtil.folderMustExists(metadataPath);
         MyUtil.mkdirIfNotExist(SIMPLEMETA_PATH);
 
         System.out.println("Convert metadata to simplemeta");
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(METADATA_PATH)) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(metadataPath)) {
             stream.forEach(oldMetaPath -> {
                 Path simplemetaPath = getSimplePathFromMeta(oldMetaPath);
                 if (Files.exists(simplemetaPath)) {

@@ -1,6 +1,4 @@
-package wuliu_j.model;
-
-import wuliu_j.util.MyUtil;
+package wuliu_j.common;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -18,34 +16,20 @@ public class Metadata extends Simplemeta {
 
     public static Metadata of(Map<String,Object> data) {
         Metadata meta = new Metadata();
-        Number size = (Number) data.get("size");
-        Number like = (Number) data.get("like");
-
         meta.id = (String) data.get("id");
         meta.filename = (String) data.get("filename");
         meta.checksum = (String) data.get("checksum");
-        meta.size = size.longValue();
+        meta.size = MyUtil.getLongFromMap(data, "size");
         meta.type = (String) data.get("type");
-        meta.like = like.intValue();
+        meta.like = MyUtil.getIntFromMap(data, "like");
         meta.label = (String) data.get("label");
         meta.notes = (String) data.get("notes");
-        meta.keywords = objToList(data, "keywords");
-        meta.collections = objToList(data, "collections");
-        meta.albums = objToList(data, "albums");
+        meta.keywords = MyUtil.getStrListFromMap(data, "keywords");
+        meta.collections = MyUtil.getStrListFromMap(data, "collections");
+        meta.albums = MyUtil.getStrListFromMap(data, "albums");
         meta.ctime = (String) data.get("ctime");
         meta.utime = (String) data.get("utime");
-
         return meta;
-    }
-
-    static List<String> objToList(Map<String,Object> data, String key) {
-        Object obj = data.get(key);
-        if (obj instanceof List<?>) {
-            @SuppressWarnings("unchecked")
-            var list = (List<String>) obj;
-            return list;
-        }
-        throw new RuntimeException(String.format("%s is not a string list", key));
     }
 
     public Simplemeta toSimple() {

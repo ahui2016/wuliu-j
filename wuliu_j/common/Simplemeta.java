@@ -1,9 +1,6 @@
-package wuliu_j.model;
+package wuliu_j.common;
 
 import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 public class Simplemeta {
     String id;
