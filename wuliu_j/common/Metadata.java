@@ -9,27 +9,12 @@ public class Metadata extends Simplemeta {
     List<String> collections;
     List<String> albums;
 
-    public static Metadata fromJsonFile(Path jsonPath) throws IOException {
-        Map<String,Object> data = MyUtil.readJsonFileToMap(jsonPath);
-        return of(data);
-    }
-
-    public static Metadata of(Map<String,Object> data) {
-        Metadata meta = new Metadata();
-        meta.id = (String) data.get("id");
-        meta.filename = (String) data.get("filename");
-        meta.checksum = (String) data.get("checksum");
-        meta.size = MyUtil.getLongFromMap(data, "size");
-        meta.type = (String) data.get("type");
-        meta.like = MyUtil.getIntFromMap(data, "like");
-        meta.label = (String) data.get("label");
-        meta.notes = (String) data.get("notes");
-        meta.keywords = MyUtil.getStrListFromMap(data, "keywords");
-        meta.collections = MyUtil.getStrListFromMap(data, "collections");
-        meta.albums = MyUtil.getStrListFromMap(data, "albums");
-        meta.ctime = (String) data.get("ctime");
-        meta.utime = (String) data.get("utime");
-        return meta;
+    @Override
+    public void readFromMap(Map<String,Object> data) {
+        super.readFromMap(data);
+        this.keywords = MyUtil.getStrListFromMap(data, "keywords");
+        this.collections = MyUtil.getStrListFromMap(data, "collections");
+        this.albums = MyUtil.getStrListFromMap(data, "albums");
     }
 
     public Simplemeta toSimple() {

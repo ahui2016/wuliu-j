@@ -3,6 +3,8 @@ package wuliu_j.common;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.mapper.reflect.ConstructorMapper;
 
+import java.util.Map;
+
 public class DB {
     private final String path;
     private final Jdbi jdbi;
@@ -22,10 +24,14 @@ public class DB {
     handle -> handle.createScript(Stmt.CREATE_TABLES).execute());
     }
 
-    public void insertSimplemeta(Simplemeta meta) {
+    public void insertSimplemeta(Map<String,Object> meta) {
         jdbi.withHandle(handle ->
-            handle.createUpdate(Stmt.INSERT_SIMPLEMETA)
-                .bindMap(meta.toMap()).execute());
+                handle.createUpdate(Stmt.INSERT_SIMPLEMETA)
+                        .bindMap(meta).execute());
+    }
+
+    public void insertSimplemeta(Simplemeta meta) {
+        insertSimplemeta(meta.toMap());
     }
 
     public void updateSimplemeta(Simplemeta meta) {

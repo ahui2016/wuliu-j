@@ -13,6 +13,7 @@ public class MyUtil {
     public static final Path SIMPLEMETA_PATH = Path.of("simplemeta");
     public static final Path PROJ_INFO_PATH = Path.of("project.json");
     public static final String WULIU_J_DB = "wuliu_j.db";
+    public static final Path DB_PATH = Path.of(WULIU_J_DB);
 
     /**
      * 確保 folder 存在, 如果不存在或有同名檔案, 則拋出異常。
@@ -24,7 +25,16 @@ public class MyUtil {
         }
     }
 
-    public static void mkdirIfNotExist(Path folder) {
+    /**
+     * 確保 path 不存在, 如果存在則拋出異常。 如果 path 不存在則無事發生。
+     */
+    public static void pathMustNotExists(Path path) {
+        if (Files.exists(path)) {
+            throw new RuntimeException("Path Already Exists: " + path);
+        }
+    }
+
+    public static void mkdirIfNotExists(Path folder) {
         if (Files.exists(folder) && Files.isDirectory(folder)) {
             return;
         }

@@ -20,9 +20,9 @@ public class MetaToSimple {
     public static void main(String[] args) {
         final Path metadataPath = Path.of("metadata");
         MyUtil.folderMustExists(metadataPath);
-        MyUtil.mkdirIfNotExist(SIMPLEMETA_PATH);
+        MyUtil.mkdirIfNotExists(SIMPLEMETA_PATH);
 
-        System.out.println("Convert metadata to simplemeta");
+        System.out.println("Convert metadata to simplemeta...");
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(metadataPath)) {
             stream.forEach(oldMetaPath -> {
                 Path simplemetaPath = getSimplePathFromMeta(oldMetaPath);
@@ -46,7 +46,9 @@ public class MetaToSimple {
 
     static void createSimpleFromMeta(Path oldMetaPath, Path simplemetaPath) {
         try {
-            Simplemeta meta = Metadata.fromJsonFile(oldMetaPath).toSimple();
+            var oldMeta = new Metadata();
+            oldMeta.readFromJsonFile(oldMetaPath);
+            Simplemeta meta = oldMeta.toSimple();
             MyUtil.writeJsonToFilePretty(meta.toMap(), simplemetaPath.toFile());
         } catch (IOException e) {
             throw new RuntimeException(e);

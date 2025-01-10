@@ -17,8 +17,10 @@ public class Main {
     public static void main(String[] args) throws IOException {
         String metaJson = readJsonFile();
         Map<String,Object> data = JSON.std.mapFrom(metaJson);
-        Simplemeta meta = Metadata.of(data).toSimple();
-        writeSimplemeta(meta);
+        var metadata = new Metadata();
+        metadata.readFromMap(data);
+        Simplemeta simplemeta = metadata.toSimple();
+        writeSimplemeta(simplemeta);
     }
 
     static String readJsonFile() throws IOException {

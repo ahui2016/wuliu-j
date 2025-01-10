@@ -1,18 +1,18 @@
 package wuliu_j.tools;
 
-import wuliu_j.common.DB;
-import wuliu_j.common.MyUtil;
-import wuliu_j.common.ProjectInfo;
+import wuliu_j.common.*;
 
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static wuliu_j.common.MyUtil.SIMPLEMETA_PATH;
 
 public class WuliuDB {
     static ProjectInfo projInfo;
-    static DB db;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         if (args.length == 0) {
             printHelp();
             System.exit(0);
@@ -31,11 +31,47 @@ public class WuliuDB {
             """);
     }
 
-    static void initDB() throws IOException {
-        projInfo = ProjectInfo.fromJsonFile(MyUtil.PROJ_INFO_PATH);
+    static void loadsProjInfo() {
+        try {
+            projInfo = ProjectInfo.fromJsonFile(MyUtil.PROJ_INFO_PATH);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static void initDB() {
+        MyUtil.pathMustNotExists(MyUtil.DB_PATH);
+        loadsProjInfo();
         MyUtil.checkNotBackup(projInfo);
-        MyUtil.mkdirIfNotExist(SIMPLEMETA_PATH);
-        db = new DB(MyUtil.WULIU_J_DB);
+        MyUtil.mkdirIfNotExists(SIMPLEMETA_PATH);
+        DB db = new DB(MyUtil.WULIU_J_DB);
         db.createTables();
+        loadsAllSimplemeta(db);
+    }
+
+    /**
+     * 把 simplemeta 資料夾內的全部 json 導入到數據庫中。
+     * 請在調用本函數之前確認數據庫中沒有內容。
+     */
+    static void loadsAllSimplemeta(DB db) {
+        System.out.println("Loads simplemeta to the database...");
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(SIMPLEMETA_PATH, "*.json")) {
+            stream.forEach(metaPath -> {
+                System.out.print(".");
+                insertSimplemeta(metaPath, db);
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        System.out.print("\ndone\n");
+    }
+
+    static void insertSimplemeta(Path metaPath, DB db) {
+        try {
+            var meta = MyUtil.readJsonFileToMap(metaPath);
+            db.insertSimplemeta(meta);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
