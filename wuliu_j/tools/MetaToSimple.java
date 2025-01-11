@@ -5,7 +5,6 @@ import wuliu_j.common.Simplemeta;
 import wuliu_j.common.MyUtil;
 
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -23,7 +22,7 @@ public class MetaToSimple {
         MyUtil.mkdirIfNotExists(SIMPLEMETA_PATH);
 
         System.out.println("Convert metadata to simplemeta...");
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(metadataPath)) {
+        try (var stream = Files.newDirectoryStream(metadataPath)) {
             stream.forEach(oldMetaPath -> {
                 Path simplemetaPath = getSimplePathFromMeta(oldMetaPath);
                 if (Files.exists(simplemetaPath)) {

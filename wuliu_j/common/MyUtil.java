@@ -6,10 +6,15 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
 public class MyUtil {
+    public static final DateTimeFormatter RFC3339 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssXXX");
+    public static final Path INPUT_PATH = Path.of("input");
+    public static final Path FILES_PATH = Path.of("files");
     public static final Path SIMPLEMETA_PATH = Path.of("simplemeta");
     public static final Path PROJ_INFO_PATH = Path.of("project.json");
     public static final String WULIU_J_DB = "wuliu_j.db";
@@ -72,7 +77,7 @@ public class MyUtil {
         return n.intValue();
     }
 
-    static List<String> getStrListFromMap(Map<String,Object> data, String key) {
+    public static List<String> getStrListFromMap(Map<String,Object> data, String key) {
         Object obj = data.get(key);
         if (obj instanceof List<?>) {
             @SuppressWarnings("unchecked")
@@ -80,5 +85,20 @@ public class MyUtil {
             return list;
         }
         throw new RuntimeException(String.format("%s is not a string list", key));
+    }
+
+    /**
+     * 從 folder 獲取一個檔案, 忽略 folder 中的資料夾。
+     */
+    public static Path getOneFileFrom(Path folder) {
+        try (var paths = Files.list(folder)) {
+            return paths.filter(Files::isRegularFile).findAny().orElseThrow();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static String timeNowRFC3339() {
+        return OffsetDateTime.now().format(RFC3339);
     }
 }

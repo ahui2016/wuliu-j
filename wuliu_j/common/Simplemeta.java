@@ -1,21 +1,65 @@
 package wuliu_j.common;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.security.MessageDigest;
+import java.util.*;
+import java.util.zip.CRC32;
 
 public class Simplemeta {
     String id;
     String filename;
-    String checksum;
-    Long size;
+    String checksum; // SHA-1
+    Long size; // the file size, in bytes
     String type;
     Integer like;
     String label;
     String notes;
     String ctime;
     String utime;
+
+    public Simplemeta() {
+        // create an empty simplemeta
+    }
+
+    public Simplemeta(Path file) {
+        this.filename = file.getFileName().toString();
+        this.id = Simplemeta.nameToID(this.filename);
+        this.checksum = Simplemeta.getFileSHA1(file);
+        this.size = file.toFile().length();
+        this.type = Simplemeta.typeByFilename(this.filename);
+        this.like = 0;
+        this.label = "";
+        this.notes = "";
+        this.ctime = MyUtil.timeNowRFC3339();
+        this.utime = this.ctime;
+    }
+
+    /**
+     * 目的: 根据文件名计算出文件 ID, 确保相同的文件名拥有相同的 ID.
+     * 實現: 把一个字符串转化为 crc32, 再转化为 36 进制, 作為 ID.
+     */
+    public static String nameToID(String name) {
+        var crc = new CRC32();
+        crc.update(name.getBytes());
+        return Long.toString(crc.getValue(), 36).toUpperCase();
+    }
+
+    /**
+     * 讀取 file 的全部內容, 計算其 SHA-1, 轉換為 hex string 返回。
+     */
+    public static String getFileSHA1(Path file) {
+        try {
+            var md = MessageDigest.getInstance("SHA-1");
+            var hex = HexFormat.of();
+            var data = Files.readAllBytes(file);
+            var digest = md.digest(data);
+            return hex.formatHex(digest);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public void readFromJsonFile(Path jsonPath) throws IOException {
         Map<String,Object> data = MyUtil.readJsonFileToMap(jsonPath);
@@ -48,5 +92,39 @@ public class Simplemeta {
         map.putLast("ctime", this.ctime);
         map.putLast("utime", this.utime);
         return map;
+    }
+
+    public static String getFileExtension(String filename) {
+        int dotIndex = filename.lastIndexOf(".");
+        if (dotIndex >= 0) {
+            return filename.substring(dotIndex).toLowerCase();
+        }
+        return "";
+    }
+
+    /**
+     * 根據檔名判斷檔案類型。類型是 wuliu-j 私有類型。
+     */
+    public static String typeByFilename (String name) {
+        List<String> imagesSuffix = List.of(
+                ".jpg", ".jpeg", ".png", ".gif", ".webp"
+        );
+        List<String> docsSuffix = List.of(
+                ".htm", ".html", ".css", ".json", ".pdf"
+        );
+        List<String> textSuffix = List.of(
+                ".txt", ".md", ".js", ".py", ".go", ".java"
+        );
+        var suffix = Simplemeta.getFileExtension(name);
+        if (imagesSuffix.contains(suffix)) {
+            return "previewable-image" + suffix;
+        }
+        if (docsSuffix.contains(suffix)) {
+            return "previewable-docs" + suffix;
+        }
+        if (textSuffix.contains(suffix)) {
+            return "text" + suffix;
+        }
+        return suffix;
     }
 }
