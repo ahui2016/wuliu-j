@@ -2,6 +2,9 @@ package wuliu_j.common;
 
 import com.fasterxml.jackson.jr.ob.JSON;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -92,13 +95,68 @@ public class MyUtil {
      */
     public static Path getOneFileFrom(Path folder) {
         try (var paths = Files.list(folder)) {
-            return paths.filter(Files::isRegularFile).findAny().orElseThrow();
-        } catch (Exception e) {
+            var maybe = paths.filter(Files::isRegularFile).findAny();
+            if (maybe.isEmpty()) {
+                System.err.println("ERROR! 未能從資料夾獲取檔案: " + folder);
+                System.exit(0);
+            }
+            return maybe.get();
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     public static String timeNowRFC3339() {
         return OffsetDateTime.now().format(RFC3339);
+    }
+
+    /**
+     * 讀檔案 file 獲取圖片, 確保該圖片是正方形, 並限制圖片的尺寸。
+     */
+    public static Image getImageCropLimit(File file, int limit) throws IOException {
+        var img = ImageIO.read(file);
+        img = Picture.cropCenter(img);
+        return Picture.resizeLimit(img, limit);
+    }
+}
+
+class Picture {
+
+    /**
+     * 確保該圖片是正方形。
+     * 如果不是正方形, 則截取其中間部分, 返回正方形的圖片。
+     */
+    static BufferedImage cropCenter(BufferedImage img) {
+        var w = img.getWidth();
+        var h = img.getHeight();
+        if (w == h) {
+            return img;
+        }
+        int x = 0;
+        int y = 0;
+        float wF = w;
+        float hF = h;
+        if (w < h) {
+            h = w;
+            var yF = (hF - wF) / 2F;
+            y = Math.round(yF);
+        }
+        if (w > h) {
+            w = h;
+            var xF = (wF - hF) / 2F;
+            x = Math.round(xF);
+        }
+        return img.getSubimage(x, y, w, h);
+    }
+
+    /**
+     * 使用本函數前請先使用 getImageCropCenter() 確保 img 是正方形的圖片。
+     * 當圖片 img 的邊長大於 limit, 則縮小圖片。
+     */
+    static Image resizeLimit(BufferedImage img, int limit) {
+        if (img.getWidth() <= limit) {
+            return img;
+        }
+        return img.getScaledInstance(limit, limit, BufferedImage.SCALE_SMOOTH);
     }
 }

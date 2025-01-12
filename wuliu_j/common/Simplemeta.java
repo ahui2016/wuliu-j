@@ -62,7 +62,7 @@ public class Simplemeta {
     }
 
     public void readFromJsonFile(Path jsonPath) throws IOException {
-        Map<String,Object> data = MyUtil.readJsonFileToMap(jsonPath);
+        var data = MyUtil.readJsonFileToMap(jsonPath);
         this.readFromMap(data);
     }
 
@@ -92,6 +92,14 @@ public class Simplemeta {
         map.putLast("ctime", this.ctime);
         map.putLast("utime", this.utime);
         return map;
+    }
+
+    public boolean isImage() {
+        return Simplemeta.isImage(this.type);
+    }
+
+    public static boolean isImage(String filetype) {
+        return filetype.startsWith("previewable-image");
     }
 
     public static String getFileExtension(String filename) {
