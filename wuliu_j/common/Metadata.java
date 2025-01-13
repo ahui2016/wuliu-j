@@ -3,9 +3,9 @@ package wuliu_j.common;
 import java.util.*;
 
 public class Metadata extends Simplemeta {
-    List<String> keywords;
-    List<String> collections;
-    List<String> albums;
+    public List<String> keywords;
+    public List<String> collections;
+    public List<String> albums;
 
     @Override
     public void readFromMap(Map<String,Object> data) {

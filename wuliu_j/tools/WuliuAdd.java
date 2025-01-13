@@ -1,5 +1,6 @@
 package wuliu_j.tools;
 
+import com.fasterxml.jackson.jr.ob.JSON;
 import wuliu_j.common.DB;
 import wuliu_j.common.MyUtil;
 import wuliu_j.common.ProjectInfo;
@@ -8,22 +9,24 @@ import wuliu_j.common.Simplemeta;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 
 public class WuliuAdd implements Runnable{
-    static final int pictureSizeLimit = 300;
-    static ProjectInfo projInfo;
+    private static ProjectInfo projInfo;
+    private static final int pictureSizeLimit = 300;
     private static final int recentLabelsLimit = 10;
 
+    private JFrame frame;
     private List<String> labels;
     private JList<String> labelList;
     private JTextField labelText;
     private JTextField notesText;
+
+    private final DB db = new DB(MyUtil.WULIU_J_DB);
+    private Path currentFile;
 
     public static void main(String[] args) throws IOException {
         check();
@@ -40,19 +43,16 @@ public class WuliuAdd implements Runnable{
     }
 
     public void run() {
-        DB db = new DB(MyUtil.WULIU_J_DB);
-
-        var file = MyUtil.getOneFileFrom(MyUtil.INPUT_PATH);
-        var filename = file.getFileName().toString();
+        currentFile = MyUtil.getOneFileFrom(MyUtil.INPUT_PATH);
+        var filename = currentFile.getFileName().toString();
         var filetype = Simplemeta.typeByFilename(filename);
         var isImage = Simplemeta.isImage(filetype);
 
-        var frame = new JFrame("Wuliu Add");
+        frame = new JFrame("Wuliu Add");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         var pane_1 = new JPanel();
         var pane_2 = new JPanel();
-        // pane_1.setLayout(new BoxLayout(pane_1, BoxLayout.PAGE_AXIS));
         pane_1.setBorder(new EmptyBorder(10, 10, 10, 10));
         pane_2.setLayout(new BoxLayout(pane_2, BoxLayout.PAGE_AXIS));
         pane_2.setBorder(new EmptyBorder(10, 10, 10, 10));
@@ -60,7 +60,7 @@ public class WuliuAdd implements Runnable{
         JLabel fileArea;
         if (isImage) {
             try {
-                var image = MyUtil.getImageCropLimit(file.toFile(), pictureSizeLimit);
+                var image = MyUtil.getImageCropLimit(currentFile.toFile(), pictureSizeLimit);
                 var pic = new ImageIcon(image);
                 fileArea = new JLabel(pic);
             } catch (IOException e) {
@@ -73,7 +73,7 @@ public class WuliuAdd implements Runnable{
         pane_1.add(fileArea);
 
         var labelPane = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        var labelLabel = new JLabel("Label");
+        var labelLabel = new JLabel("Label:");
         labelText = new JTextField(20);
         labelText.setFont(MyUtil.FONT_18);
         labelPane.add(labelLabel);
@@ -81,7 +81,7 @@ public class WuliuAdd implements Runnable{
         pane_1.add(labelPane);
 
         var notesPane = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        var notesLabel = new JLabel("Notes");
+        var notesLabel = new JLabel("Notes:");
         notesText = new JTextField(20);
         notesText.setFont(MyUtil.FONT_18);
         notesPane.add(notesLabel);
@@ -89,7 +89,7 @@ public class WuliuAdd implements Runnable{
         pane_1.add(notesPane);
 
         var submitBtn = new JButton("Submit");
-        // submitBtn.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        submitBtn.addActionListener(new SubmitBtnListener());
         pane_1.add(submitBtn);
 
         JLabel recentLabelsTitle = new JLabel("Recent Labels:");
@@ -133,6 +133,24 @@ public class WuliuAdd implements Runnable{
                 labelText.setText(text);
                 labelText.requestFocusInWindow();
             }
+        }
+    }
+
+    class SubmitBtnListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            var meta = new Simplemeta(currentFile);
+            meta.label = labelText.getText();
+            meta.notes = notesText.getText();
+            try {
+                var metaJson = JSON.std.with(JSON.Feature.PRETTY_PRINT_OUTPUT).asString(meta.toMap());
+                System.out.println(metaJson);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+            JOptionPane.showMessageDialog(frame, "添加檔案成功!");
+            labelText.setText("");
+            notesText.setText("");
         }
     }
 }

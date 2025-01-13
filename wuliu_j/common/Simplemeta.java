@@ -8,16 +8,16 @@ import java.util.*;
 import java.util.zip.CRC32;
 
 public class Simplemeta {
-    String id;
-    String filename;
-    String checksum; // SHA-1
-    Long size; // the file size, in bytes
-    String type;
-    Integer like;
-    String label;
-    String notes;
-    String ctime;
-    String utime;
+    public String id;
+    public String filename;
+    public String checksum; // SHA-1
+    public Long size; // the file size, in bytes
+    public String type;
+    public Integer like;
+    public String label;
+    public String notes;
+    public String ctime;
+    public String utime;
 
     public Simplemeta() {
         // create an empty simplemeta
