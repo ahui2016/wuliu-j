@@ -10,6 +10,8 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.util.List;
 
@@ -20,6 +22,8 @@ public class WuliuAdd implements Runnable{
 
     private List<String> labels;
     private JList<String> labelList;
+    private JTextField labelText;
+    private JTextField notesText;
 
     public static void main(String[] args) throws IOException {
         check();
@@ -48,8 +52,10 @@ public class WuliuAdd implements Runnable{
 
         var pane_1 = new JPanel();
         var pane_2 = new JPanel();
+        // pane_1.setLayout(new BoxLayout(pane_1, BoxLayout.PAGE_AXIS));
+        pane_1.setBorder(new EmptyBorder(10, 10, 10, 10));
         pane_2.setLayout(new BoxLayout(pane_2, BoxLayout.PAGE_AXIS));
-        pane_2.setBorder(new EmptyBorder(10, 0, 0, 10));
+        pane_2.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         JLabel fileArea;
         if (isImage) {
@@ -63,7 +69,28 @@ public class WuliuAdd implements Runnable{
         } else {
             fileArea = new JLabel(filename);
         }
+        fileArea.setBorder(new EmptyBorder(10, 10, 10, 10));
         pane_1.add(fileArea);
+
+        var labelPane = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        var labelLabel = new JLabel("Label");
+        labelText = new JTextField(20);
+        labelText.setFont(MyUtil.FONT_18);
+        labelPane.add(labelLabel);
+        labelPane.add(labelText);
+        pane_1.add(labelPane);
+
+        var notesPane = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        var notesLabel = new JLabel("Notes");
+        notesText = new JTextField(20);
+        notesText.setFont(MyUtil.FONT_18);
+        notesPane.add(notesLabel);
+        notesPane.add(notesText);
+        pane_1.add(notesPane);
+
+        var submitBtn = new JButton("Submit");
+        // submitBtn.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        pane_1.add(submitBtn);
 
         JLabel recentLabelsTitle = new JLabel("Recent Labels:");
         // recentLabelsTitle.setBorder(BorderFactory.createLineBorder(Color.BLACK, 3));
@@ -82,9 +109,15 @@ public class WuliuAdd implements Runnable{
 
         frame.add(BorderLayout.CENTER, pane_1);
         frame.add(BorderLayout.EAST, pane_2);
-        frame.setSize(600, 400);
+        frame.setSize(600, 520);
         frame.setLocationRelativeTo(null); // 窗口居中
         frame.setVisible(true);
+
+        frame.addWindowFocusListener(new WindowAdapter() {
+            public void windowGainedFocus(WindowEvent e) {
+                labelText.requestFocusInWindow();
+            }
+        });
     }
 
     class DoubleClickAdapter extends MouseAdapter {
@@ -92,9 +125,14 @@ public class WuliuAdd implements Runnable{
         public void mouseClicked(MouseEvent event) {
             if (event.getClickCount() == 2) {
                 int i = labelList.locationToIndex(event.getPoint());
-                System.out.println(labels.get(i));
+                var text = labelText.getText();
+                if (!text.isBlank()) {
+                    text += "-";
+                }
+                text += labels.get(i);
+                labelText.setText(text);
+                labelText.requestFocusInWindow();
             }
         }
     }
 }
-
