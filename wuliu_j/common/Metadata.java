@@ -1,7 +1,5 @@
 package wuliu_j.common;
 
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.*;
 
 public class Metadata extends Simplemeta {
@@ -19,7 +17,7 @@ public class Metadata extends Simplemeta {
 
     /**
      * 把舊的 metadata 轉換為新的 simplemeta.
-     * 其中 label 和 notes 合併為 label, 而 keywords/collections/albums 則合併為 notes.
+     * 其中 label 和 notes 合併為 notes, 而 keywords/collections/albums 則合併為 label.
      * checksum 從 SHA-512 改為 SHA-1, 而且 type 也有改變。
      */
     public Simplemeta toSimple() {
@@ -27,9 +25,8 @@ public class Metadata extends Simplemeta {
         words.addAll(this.keywords);
         words.addAll(this.collections);
         words.addAll(this.albums);
-        List<String> wordList = new ArrayList<>(words);
-        String notes = String.join(", ", wordList);
-        String label = (this.label + " " + this.notes).strip();
+        String label = String.join(", ", words);
+        String notes = (this.label + " " + this.notes).strip();
 
         Simplemeta simple = new Simplemeta();
         simple.id = this.id;

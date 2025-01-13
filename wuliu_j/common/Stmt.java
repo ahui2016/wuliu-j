@@ -38,4 +38,9 @@ public class Stmt {
     public static final String DELETE_SIMPLEMETA = """
         DELETE FROM simplemeta WHERE id=:id;
         """;
+
+    public static final String GET_RECENT_LABELS = """
+        SELECT DISTINCT label FROM simplemeta
+        ORDER BY utime DESC LIMIT :limit;
+        """;
 }

@@ -23,6 +23,9 @@ public class MyUtil {
     public static final String WULIU_J_DB = "wuliu_j.db";
     public static final Path DB_PATH = Path.of(WULIU_J_DB);
 
+    public static final Font FONT_BOLD_20 = new Font("sanserif", Font.BOLD, 20);
+    public static final Font FONT_18 = new Font(Font.SANS_SERIF, Font.PLAIN, 20);
+
     /**
      * 確保 folder 存在, 如果不存在或有同名檔案, 則拋出異常。
      * 如果 folder 存在則無事發生。
@@ -121,7 +124,6 @@ public class MyUtil {
 }
 
 class Picture {
-
     /**
      * 確保該圖片是正方形。
      * 如果不是正方形, 則截取其中間部分, 返回正方形的圖片。
