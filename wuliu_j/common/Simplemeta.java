@@ -36,6 +36,12 @@ public class Simplemeta {
         this.utime = this.ctime;
     }
 
+    public static Simplemeta ofMap(Map<String,Object> data) {
+        var meta = new Simplemeta();
+        meta.readFromMap(data);
+        return meta;
+    }
+
     /**
      * 目的: 根据文件名计算出文件 ID, 确保相同的文件名拥有相同的 ID.
      * 實現: 把一个字符串转化为 crc32, 再转化为 36 进制, 作為 ID.

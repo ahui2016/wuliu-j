@@ -11,6 +11,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -22,11 +23,14 @@ public class WuliuAdd implements Runnable{
     private JFrame frame;
     private List<String> labels;
     private JList<String> labelList;
+    private JLabel previewArea;
+    private JTextField filenameText;
     private JTextField labelText;
     private JTextField notesText;
 
     private final DB db = new DB(MyUtil.WULIU_J_DB);
     private Path currentFile;
+    private Simplemeta currentMeta;
 
     public static void main(String[] args) throws IOException {
         check();
@@ -42,11 +46,50 @@ public class WuliuAdd implements Runnable{
         projInfo = ProjectInfo.fromJsonFile(MyUtil.PROJ_INFO_PATH);
     }
 
-    public void run() {
+    public void reset() {
         currentFile = MyUtil.getOneFileFrom(MyUtil.INPUT_PATH);
+        filenameText.setText(currentFile.getFileName().toString());
+        resetPreviewArea();
+        labels = db.getRecentLabels(recentLabelsLimit);
+        labelList.setListData(labels.toArray(new String[0]));
+    }
+
+    public void resetPreviewArea() {
         var filename = currentFile.getFileName().toString();
         var filetype = Simplemeta.typeByFilename(filename);
         var isImage = Simplemeta.isImage(filetype);
+        if (isImage) {
+            try {
+                var image = MyUtil.getImageCropLimit(currentFile.toFile(), pictureSizeLimit);
+                previewArea.setIcon(new ImageIcon(image));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            previewArea.setIcon(new ImageIcon());
+        }
+    }
+
+    private void loadCurrentFile() {
+        currentFile = MyUtil.getOneFileFrom(MyUtil.INPUT_PATH);
+        currentMeta = new Simplemeta(currentFile);
+        fileMustNotExist(currentMeta);
+    }
+
+    private void fileMustNotExist(Simplemeta meta) {
+        MyUtil.pathMustNotExists(MyUtil.FILES_PATH.resolve(meta.filename));
+        MyUtil.pathMustNotExists(MyUtil.getSimplemetaPath(meta.filename));
+        var opt = db.getMetaByChecksum(meta.checksum);
+        if (opt.isPresent()) {
+            System.out.printf(
+                    "已存在相同內容的檔案 ID:%s, Filename:%s%n",
+                    meta.id, meta.filename);
+            System.exit(0);
+        }
+    }
+
+    public void run() {
+        loadCurrentFile();
 
         frame = new JFrame("Wuliu Add");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -57,20 +100,20 @@ public class WuliuAdd implements Runnable{
         pane_2.setLayout(new BoxLayout(pane_2, BoxLayout.PAGE_AXIS));
         pane_2.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        JLabel fileArea;
-        if (isImage) {
-            try {
-                var image = MyUtil.getImageCropLimit(currentFile.toFile(), pictureSizeLimit);
-                var pic = new ImageIcon(image);
-                fileArea = new JLabel(pic);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            fileArea = new JLabel(filename);
-        }
-        fileArea.setBorder(new EmptyBorder(10, 10, 10, 10));
-        pane_1.add(fileArea);
+        previewArea = new JLabel();
+        resetPreviewArea();
+        previewArea.setBorder(new EmptyBorder(10, 10, 10, 10));
+        pane_1.add(previewArea);
+
+        var filenamePane = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        var filenameLabel = new JLabel("Filename:");
+        filenameText = new JTextField(20);
+        filenameText.setFont(MyUtil.FONT_18);
+        filenamePane.add(filenameLabel);
+        filenamePane.add(filenameText);
+        pane_1.add(filenamePane);
+        filenameText.setText(currentFile.getFileName().toString());
+        filenameText.setEditable(false);
 
         var labelPane = new JPanel(new FlowLayout(FlowLayout.LEFT));
         var labelLabel = new JLabel("Label:");
@@ -87,6 +130,14 @@ public class WuliuAdd implements Runnable{
         notesPane.add(notesLabel);
         notesPane.add(notesText);
         pane_1.add(notesPane);
+
+        var clearBtn = new JButton("Clear");
+        clearBtn.addActionListener(_ -> {
+            notesText.setText("");
+            labelText.setText("");
+            labelText.requestFocusInWindow();
+        });
+        pane_1.add(clearBtn);
 
         var submitBtn = new JButton("Submit");
         submitBtn.addActionListener(new SubmitBtnListener());
@@ -109,7 +160,7 @@ public class WuliuAdd implements Runnable{
 
         frame.add(BorderLayout.CENTER, pane_1);
         frame.add(BorderLayout.EAST, pane_2);
-        frame.setSize(600, 520);
+        frame.setSize(600, 550);
         frame.setLocationRelativeTo(null); // 窗口居中
         frame.setVisible(true);
 
@@ -139,18 +190,26 @@ public class WuliuAdd implements Runnable{
     class SubmitBtnListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-            var meta = new Simplemeta(currentFile);
-            meta.label = labelText.getText();
-            meta.notes = notesText.getText();
+            // 添加档案时不需要检查磁盘空间，
+            // 因为 input 资料夹与 files 资料夹在同一个磁盘分区内。
             try {
-                var metaJson = JSON.std.with(JSON.Feature.PRETTY_PRINT_OUTPUT).asString(meta.toMap());
-                System.out.println(metaJson);
+                var meta = currentMeta;
+                meta.label = labelText.getText();
+                meta.notes = notesText.getText();
+                var metaPath = MyUtil.getSimplemetaPath(meta.filename);
+                System.out.println("Create => " + metaPath);
+                JSON.std.with(JSON.Feature.PRETTY_PRINT_OUTPUT)
+                        .write(meta.toMap(), metaPath.toFile());
+                var src = MyUtil.INPUT_PATH.resolve(meta.filename);
+                var dst = MyUtil.FILES_PATH.resolve(meta.filename);
+                System.out.println("Add => " + dst);
+                Files.move(src, dst);
+                db.insertSimplemeta(meta.toMap());
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
             JOptionPane.showMessageDialog(frame, "添加檔案成功!");
-            labelText.setText("");
-            notesText.setText("");
+            reset();
         }
     }
 }

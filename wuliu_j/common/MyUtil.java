@@ -41,7 +41,8 @@ public class MyUtil {
      */
     public static void pathMustNotExists(Path path) {
         if (Files.exists(path)) {
-            throw new RuntimeException("Path Already Exists: " + path);
+            System.out.printf("檔案已存在: " + path);
+            System.exit(0);
         }
     }
 
@@ -120,6 +121,10 @@ public class MyUtil {
         var img = ImageIO.read(file);
         img = Picture.cropCenter(img);
         return Picture.resizeLimit(img, limit);
+    }
+
+    public static Path getSimplemetaPath(String filename) {
+        return SIMPLEMETA_PATH.resolve(filename + ".json");
     }
 }
 

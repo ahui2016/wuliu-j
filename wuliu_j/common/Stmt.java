@@ -43,4 +43,8 @@ public class Stmt {
         SELECT DISTINCT label FROM simplemeta
         ORDER BY utime DESC LIMIT :limit;
         """;
+
+    public static final String GET_META_BY_CHECKSUM = """
+        SELECT * FROM simplemeta WHERE checksum=:checksum;
+        """;
 }

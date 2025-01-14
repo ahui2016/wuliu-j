@@ -5,6 +5,7 @@ import org.jdbi.v3.core.mapper.reflect.ConstructorMapper;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class DB {
     private final String path;
@@ -53,5 +54,14 @@ public class DB {
                       .bind("limit", limit)
                       .mapTo(String.class)
                       .list());
+    }
+
+    public Optional<Simplemeta> getMetaByChecksum(String checksum) {
+        var opt = jdbi.withHandle(handle ->
+                handle.select(Stmt.GET_META_BY_CHECKSUM)
+                      .bind("checksum", checksum)
+                      .mapToMap()
+                      .findOne());
+        return opt.map(Simplemeta::ofMap);
     }
 }
