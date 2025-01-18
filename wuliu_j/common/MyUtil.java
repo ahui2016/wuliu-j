@@ -24,7 +24,8 @@ public class MyUtil {
     public static final Path DB_PATH = Path.of(WULIU_J_DB);
 
     public static final Font FONT_BOLD_20 = new Font("sanserif", Font.BOLD, 20);
-    public static final Font FONT_18 = new Font(Font.SANS_SERIF, Font.PLAIN, 20);
+    public static final Font FONT_18 = new Font(Font.SANS_SERIF, Font.PLAIN, 18);
+    public static final Font FONT_16 = new Font(Font.SANS_SERIF, Font.PLAIN, 16);
 
     /**
      * 確保 folder 存在, 如果不存在或有同名檔案, 則拋出異常。
@@ -101,7 +102,7 @@ public class MyUtil {
         try (var paths = Files.list(folder)) {
             var maybe = paths.filter(Files::isRegularFile).findAny();
             if (maybe.isEmpty()) {
-                System.err.println("ERROR! 未能從資料夾獲取檔案: " + folder);
+                System.err.printf("ERROR! 在%s資料夾中未發現檔案%n", folder);
                 System.exit(0);
             }
             return maybe.get();

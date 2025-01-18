@@ -8,6 +8,7 @@ Java version of Wuliu File Manager
 - `java -cp ".;classes/*" wuliu_j.tools.MetaToSimple`
 - `java -cp ".;classes/*" wuliu_j.tools.WuliuDB`
 - `java -cp ".;classes/*" wuliu_j.tools.WuliuAdd`
+- `java -cp ".;classes/*" wuliu_j.tools.WuliuEditMeta`
 
 ## MetaToSimple
 

@@ -3,11 +3,8 @@ package wuliu_j.tools;
 import wuliu_j.common.*;
 
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static wuliu_j.common.MyUtil.SIMPLEMETA_PATH;
 
 public class WuliuDB {
     static ProjectInfo projInfo;
@@ -43,7 +40,7 @@ public class WuliuDB {
         MyUtil.pathMustNotExists(MyUtil.DB_PATH);
         loadsProjInfo();
         MyUtil.checkNotBackup(projInfo);
-        MyUtil.mkdirIfNotExists(SIMPLEMETA_PATH);
+        MyUtil.mkdirIfNotExists(MyUtil.SIMPLEMETA_PATH);
         DB db = new DB(MyUtil.WULIU_J_DB);
         db.createTables();
         loadsAllSimplemeta(db);
@@ -55,7 +52,7 @@ public class WuliuDB {
      */
     static void loadsAllSimplemeta(DB db) {
         System.out.println("Loads simplemeta to the database...");
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(SIMPLEMETA_PATH, "*.json")) {
+        try (var stream = Files.newDirectoryStream(MyUtil.SIMPLEMETA_PATH, "*.json")) {
             stream.forEach(metaPath -> {
                 System.out.print(".");
                 insertSimplemeta(metaPath, db);

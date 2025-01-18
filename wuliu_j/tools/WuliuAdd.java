@@ -81,13 +81,15 @@ public class WuliuAdd implements Runnable{
         MyUtil.pathMustNotExists(MyUtil.getSimplemetaPath(meta.filename));
         var opt = db.getMetaByChecksum(meta.checksum);
         if (opt.isPresent()) {
+            var myMeta = opt.get();
             System.out.printf(
                     "已存在相同內容的檔案 ID:%s, Filename:%s%n",
-                    meta.id, meta.filename);
+                    myMeta.id, myMeta.filename);
             System.exit(0);
         }
     }
 
+    @Override
     public void run() {
         loadCurrentFile();
 

@@ -8,8 +8,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static wuliu_j.common.MyUtil.SIMPLEMETA_PATH;
-
 /**
  * Convert json file in metadata folder to simplemeta folder.
  * 把舊 Metadata 轉換為新的更簡單的 Simplemeta.
@@ -19,7 +17,7 @@ public class MetaToSimple {
     public static void main(String[] args) {
         final Path metadataPath = Path.of("metadata");
         MyUtil.folderMustExists(metadataPath);
-        MyUtil.mkdirIfNotExists(SIMPLEMETA_PATH);
+        MyUtil.mkdirIfNotExists(MyUtil.SIMPLEMETA_PATH);
 
         System.out.println("Convert metadata to simplemeta...");
         try (var stream = Files.newDirectoryStream(metadataPath)) {
@@ -40,7 +38,7 @@ public class MetaToSimple {
 
     static Path getSimplePathFromMeta(Path oldMetaPath) {
         Path filename = oldMetaPath.getFileName();
-        return SIMPLEMETA_PATH.resolve(filename);
+        return MyUtil.SIMPLEMETA_PATH.resolve(filename);
     }
 
     static void createSimpleFromMeta(Path oldMetaPath, Path simplemetaPath) {
