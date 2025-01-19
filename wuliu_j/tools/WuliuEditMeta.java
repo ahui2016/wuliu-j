@@ -10,14 +10,17 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 public class WuliuEditMeta implements Runnable {
     private static ProjectInfo projInfo;
     private static DB db;
     private static final int fileListLimit = 20;
 
+    private JFrame frame;
     private JTextField filenameTF;
     private JButton searchFilenameBtn;
+    private JButton searchIdBtn;
 
     private JTextField fileIdTF;
     private JTextField readonlyIdTF;
@@ -46,12 +49,13 @@ public class WuliuEditMeta implements Runnable {
     @Override
     public void run() {
         createGUI();
+        searchIdBtn.addActionListener(new SearchIdListener());
         searchFilenameBtn.addActionListener(new SearchFilenameListener());
         idFileList.addMouseListener(new DoubleClickAdapter());
     }
 
     public void createGUI() {
-        var frame = new JFrame("Wuliu Edit Meta");
+        frame = new JFrame("Wuliu Edit Meta");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         var pane_1 = new JPanel();
@@ -78,7 +82,7 @@ public class WuliuEditMeta implements Runnable {
         var fileIdLabel = new JLabel("ID:");
         fileIdTF = new JTextField(10);
         fileIdTF.setFont(MyUtil.FONT_18);
-        var searchIdBtn = new JButton("Search");
+        searchIdBtn = new JButton("Search");
         fileIdPane.add(fileIdLabel);
         fileIdPane.add(fileIdTF);
         fileIdPane.add(searchIdBtn);
@@ -125,6 +129,17 @@ public class WuliuEditMeta implements Runnable {
         return metaList.stream().map(file -> "[%s] %s".formatted(file.id, file.filename)).toList();
     }
 
+    private void fillTheForm(Simplemeta file) {
+        readonlyIdTF.setText(file.id);
+        readonlyFilenameTF.setText(file.filename);
+        readonlySizeTF.setText(MyUtil.fileSizeToString(file.size));
+        likeTF.setText(file.like.toString());
+        labelTF.setText(file.label);
+        notesTF.setText(file.notes);
+        ctimeTF.setText(file.ctime);
+        utimeTF.setText(file.utime);
+    }
+
     class DoubleClickAdapter extends MouseAdapter {
         @Override
         public void mouseClicked(MouseEvent event) {
@@ -132,14 +147,7 @@ public class WuliuEditMeta implements Runnable {
                 int i = idFileList.locationToIndex(event.getPoint());
                 var file = files.get(i);
                 fileIdTF.setText(file.id);
-                readonlyIdTF.setText(file.id);
-                readonlyFilenameTF.setText(file.filename);
-                readonlySizeTF.setText(MyUtil.fileSizeToString(file.size));
-                likeTF.setText(file.like.toString());
-                labelTF.setText(file.label);
-                notesTF.setText(file.notes);
-                ctimeTF.setText(file.ctime);
-                utimeTF.setText(file.utime);
+                fillTheForm(file);
             }
         }
     }
@@ -156,5 +164,56 @@ public class WuliuEditMeta implements Runnable {
             var idFilenames = metaToStringList(files);
             idFileList.setListData(idFilenames.toArray(new String[0]));
         }
+    }
+
+    class SearchIdListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            var fileID = fileIdTF.getText();
+            if (fileID.isBlank()) {
+                JOptionPane.showMessageDialog(frame, "請輸入檔案ID");
+                return;
+            }
+            var result = db.getMetaByID(fileID);
+            if (result.isEmpty()) {
+                JOptionPane.showMessageDialog(frame, "找不到ID: " + fileID);
+                return;
+            }
+            var file = result.get();
+            fillTheForm(file);
+        }
+    }
+
+    class UpdateBtnListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            var metaPart = new Simplemeta();
+            metaPart.like = Integer.parseInt(likeTF.getText());
+            metaPart.label = labelTF.getText();
+            metaPart.notes = notesTF.getText();
+            metaPart.ctime = ctimeTF.getText();
+            metaPart.utime = utimeTF.getText();
+            var fileID = readonlyIdTF.getText();
+            if (fileID.isBlank() || fileID.equals("id")) {
+                JOptionPane.showMessageDialog(frame, "請先尋找檔案");
+                return;
+            }
+            var result = db.getMetaByID(fileID);
+            if (result.isEmpty()) {
+                JOptionPane.showMessageDialog(frame, "找不到ID: " + fileID);
+                return;
+            }
+            var file = result.get();
+            var oldText = file.label+file.notes+ file.ctime+file.utime;
+            var newText = metaPart.label+metaPart.notes+metaPart.ctime+metaPart.utime;
+            if (file.size.equals(metaPart.size) && oldText.equals(newText)) {
+                JOptionPane.showMessageDialog(frame, "無變化, 內容未更新。");
+                return;
+            }
+            db.updateMetaPart(metaPart);
+        }
+
+        private void updateMetaFile(Simplemeta meta) {}
+        private void printResult() {}
     }
 }

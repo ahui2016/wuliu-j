@@ -210,7 +210,7 @@ public class WuliuAdd implements Runnable{
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
-            JOptionPane.showMessageDialog(frame, "添加檔案成功!");
+            JOptionPane.showMessageDialog(frame, "添加檔案成功！");
             reset();
         }
     }

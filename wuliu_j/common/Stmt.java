@@ -48,6 +48,10 @@ public class Stmt {
         SELECT * FROM simplemeta WHERE checksum=:checksum;
         """;
 
+    public static final String GET_META_BY_ID = """
+        SELECT * FROM simplemeta WHERE id=:id;
+        """;
+
     public static final String GET_BY_FILENAME_LIMIT = """
         SELECT * FROM simplemeta WHERE filename LIKE :filename
         LIMIT :limit;
@@ -58,4 +62,9 @@ public class Stmt {
         LIMIT :limit;
         """;
 
+    public static final String UPDATE_META_PART = """
+        UPDATE simplemeta SET
+            like=:like, label=:label, notes=:notes, ctime=:ctime, utime=:utime
+        WHERE id=:id;
+        """;
 }

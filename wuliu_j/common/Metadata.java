@@ -37,8 +37,8 @@ public class Metadata extends Simplemeta {
         simple.like = this.like;
         simple.label = label;
         simple.notes = notes;
-        simple.ctime = this.ctime;
-        simple.utime = this.utime;
+        simple.ctime = this.ctime.substring(0, 19);
+        simple.utime = this.utime.substring(0, 19);
 
         return simple;
     }

@@ -10,13 +10,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
 public class MyUtil {
-    public static final DateTimeFormatter RFC3339 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ssXXX");
+    public static final DateTimeFormatter RFC3339 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     public static final Path INPUT_PATH = Path.of("input");
     public static final Path FILES_PATH = Path.of("files");
     public static final Path SIMPLEMETA_PATH = Path.of("simplemeta");
@@ -129,7 +129,7 @@ public class MyUtil {
     }
 
     public static String timeNowRFC3339() {
-        return OffsetDateTime.now().format(RFC3339);
+        return LocalDateTime.now().format(RFC3339);
     }
 
     /**

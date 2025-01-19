@@ -75,6 +75,15 @@ public class DB {
         return result.stream().map(Simplemeta::ofMap).toList();
     }
 
+    public Optional<Simplemeta> getMetaByID(String fileID) {
+        var opt = jdbi.withHandle(handle ->
+                handle.select(Stmt.GET_META_BY_ID)
+                        .bind("id", fileID)
+                        .mapToMap()
+                        .findOne());
+        return opt.map(Simplemeta::ofMap);
+    }
+
     public Optional<Simplemeta> getMetaByChecksum(String checksum) {
         var opt = jdbi.withHandle(handle ->
                 handle.select(Stmt.GET_META_BY_CHECKSUM)
@@ -82,5 +91,12 @@ public class DB {
                       .mapToMap()
                       .findOne());
         return opt.map(Simplemeta::ofMap);
+    }
+
+    public void updateMetaPart(Simplemeta metaPart) {
+        jdbi.useHandle(handle ->
+                handle.createUpdate(Stmt.UPDATE_META_PART)
+                        .bindMap(metaPart.toMap())
+                        .execute());
     }
 }
