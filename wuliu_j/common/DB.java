@@ -56,6 +56,25 @@ public class DB {
                       .list());
     }
 
+    public List<Simplemeta> getByFilenameLimit(String filename, int limit) {
+        var result = jdbi.withHandle(handle ->
+                handle.select(Stmt.GET_BY_FILENAME_LIMIT)
+                        .bind("filename", "%"+filename+"%")
+                        .bind("limit", limit)
+                        .mapToMap()
+                        .list());
+        return result.stream().map(Simplemeta::ofMap).toList();
+    }
+
+    public List<Simplemeta> getRecentMetaLimit(int limit) {
+        var result = jdbi.withHandle(handle ->
+                handle.select(Stmt.GET_RECENT_META_LIMIT)
+                        .bind("limit", limit)
+                        .mapToMap()
+                        .list());
+        return result.stream().map(Simplemeta::ofMap).toList();
+    }
+
     public Optional<Simplemeta> getMetaByChecksum(String checksum) {
         var opt = jdbi.withHandle(handle ->
                 handle.select(Stmt.GET_META_BY_CHECKSUM)

@@ -1,20 +1,56 @@
 package wuliu_j.tools;
 
+import wuliu_j.common.DB;
 import wuliu_j.common.MyUtil;
+import wuliu_j.common.ProjectInfo;
+import wuliu_j.common.Simplemeta;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
+import java.io.IOException;
 import java.util.List;
 
 public class WuliuEditMeta implements Runnable {
-    public static void main(String[] args) {
+    private static ProjectInfo projInfo;
+    private static DB db;
+    private static final int fileListLimit = 20;
+
+    private JTextField filenameTF;
+    private JButton searchFilenameBtn;
+
+    private JTextField fileIdTF;
+    private JTextField readonlyIdTF;
+    private JTextField readonlyFilenameTF;
+    private JTextField readonlySizeTF;
+    private JTextField likeTF;
+    private JTextField labelTF;
+    private JTextField notesTF;
+    private JTextField ctimeTF;
+    private JTextField utimeTF;
+
+    private List<Simplemeta> files;
+    private JList<String> idFileList;
+
+    public static void main(String[] args) throws IOException {
+        initAndCheck();
         SwingUtilities.invokeLater(new WuliuEditMeta());
+    }
+
+    static void initAndCheck() throws IOException {
+        projInfo = ProjectInfo.fromJsonFile(MyUtil.PROJ_INFO_PATH);
+        MyUtil.checkNotBackup(projInfo);
+        db = new DB(MyUtil.WULIU_J_DB);
     }
 
     @Override
     public void run() {
+        createGUI();
+        searchFilenameBtn.addActionListener(new SearchFilenameListener());
+        idFileList.addMouseListener(new DoubleClickAdapter());
+    }
+
+    public void createGUI() {
         var frame = new JFrame("Wuliu Edit Meta");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -24,22 +60,23 @@ public class WuliuEditMeta implements Runnable {
 
         var filenamePane = new JPanel(new FlowLayout(FlowLayout.LEFT));
         var filenameLabel = new JLabel("Filename:");
-        var filenameTF = new JTextField(20);
+        filenameTF = new JTextField(20);
         filenameTF.setFont(MyUtil.FONT_18);
         filenamePane.add(filenameLabel);
         filenamePane.add(filenameTF);
         pane_1.add(filenamePane);
 
-        var searchFilenameBtn = new JButton("Search");
+        searchFilenameBtn = new JButton("Search");
         pane_1.add(searchFilenameBtn);
 
-        var fileList = new JList<>();
-        fileList.setFont(MyUtil.FONT_16);
-        pane_1.add(fileList);
+        idFileList = new JList<>();
+        idFileList.setFont(MyUtil.FONT_16);
+        idFileList.setFixedCellWidth(400);
+        pane_1.add(idFileList);
 
         var fileIdPane = new JPanel(new FlowLayout(FlowLayout.LEFT));
         var fileIdLabel = new JLabel("ID:");
-        var fileIdTF = new JTextField(10);
+        fileIdTF = new JTextField(10);
         fileIdTF.setFont(MyUtil.FONT_18);
         var searchIdBtn = new JButton("Search");
         fileIdPane.add(fileIdLabel);
@@ -47,14 +84,17 @@ public class WuliuEditMeta implements Runnable {
         fileIdPane.add(searchIdBtn);
         pane_2.add(fileIdPane);
 
-        var readonlyIdTF = new JTextField("id");
-        var readonlyFilenameTF = new JTextField("filename");
-        var readonlySizeTF = new JTextField("size");
-        var likeTF = new JTextField("like");
-        var labelTF = new JTextField("label");
-        var notesTF = new JTextField("notes");
-        var ctimeTF = new JTextField("ctime");
-        var utimeTF = new JTextField("utime");
+        readonlyIdTF = new JTextField("id");
+        readonlyIdTF.setEditable(false);
+        readonlyFilenameTF = new JTextField("filename");
+        readonlyFilenameTF.setEditable(false);
+        readonlySizeTF = new JTextField("size");
+        readonlySizeTF.setEditable(false);
+        likeTF = new JTextField("like");
+        labelTF = new JTextField("label");
+        notesTF = new JTextField("notes");
+        ctimeTF = new JTextField("ctime");
+        utimeTF = new JTextField("utime");
         List<JTextField> textFields = List.of(
                 readonlyIdTF, readonlyFilenameTF, readonlySizeTF,
                 likeTF, labelTF, notesTF, ctimeTF, utimeTF
@@ -70,7 +110,7 @@ public class WuliuEditMeta implements Runnable {
 
         frame.add(BorderLayout.CENTER, pane_1);
         frame.add(BorderLayout.EAST, pane_2);
-        frame.setSize(800, 550);
+        frame.setSize(850, 600);
         frame.setLocationRelativeTo(null); // 窗口居中
         frame.setVisible(true);
 
@@ -79,5 +119,42 @@ public class WuliuEditMeta implements Runnable {
                 filenameTF.requestFocusInWindow();
             }
         });
+    }
+
+    private List<String> metaToStringList(List<Simplemeta> metaList) {
+        return metaList.stream().map(file -> "[%s] %s".formatted(file.id, file.filename)).toList();
+    }
+
+    class DoubleClickAdapter extends MouseAdapter {
+        @Override
+        public void mouseClicked(MouseEvent event) {
+            if (event.getClickCount() == 2) {
+                int i = idFileList.locationToIndex(event.getPoint());
+                var file = files.get(i);
+                fileIdTF.setText(file.id);
+                readonlyIdTF.setText(file.id);
+                readonlyFilenameTF.setText(file.filename);
+                readonlySizeTF.setText(MyUtil.fileSizeToString(file.size));
+                likeTF.setText(file.like.toString());
+                labelTF.setText(file.label);
+                notesTF.setText(file.notes);
+                ctimeTF.setText(file.ctime);
+                utimeTF.setText(file.utime);
+            }
+        }
+    }
+
+    class SearchFilenameListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            var filename = filenameTF.getText();
+            if (filename.isBlank()) {
+                files = db.getRecentMetaLimit(fileListLimit);
+            } else {
+                files = db.getByFilenameLimit(filename, fileListLimit);
+            }
+            var idFilenames = metaToStringList(files);
+            idFileList.setListData(idFilenames.toArray(new String[0]));
+        }
     }
 }

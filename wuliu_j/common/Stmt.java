@@ -47,4 +47,15 @@ public class Stmt {
     public static final String GET_META_BY_CHECKSUM = """
         SELECT * FROM simplemeta WHERE checksum=:checksum;
         """;
+
+    public static final String GET_BY_FILENAME_LIMIT = """
+        SELECT * FROM simplemeta WHERE filename LIKE :filename
+        LIMIT :limit;
+        """;
+
+    public static final String GET_RECENT_META_LIMIT = """
+        SELECT * FROM simplemeta ORDER BY utime DESC
+        LIMIT :limit;
+        """;
+
 }
