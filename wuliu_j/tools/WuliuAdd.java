@@ -46,7 +46,7 @@ public class WuliuAdd implements Runnable{
         projInfo = ProjectInfo.fromJsonFile(MyUtil.PROJ_INFO_PATH);
     }
 
-    public void reset() {
+    private void reset() {
         currentFile = MyUtil.getOneFileFrom(MyUtil.INPUT_PATH);
         filenameText.setText(currentFile.getFileName().toString());
         resetPreviewArea();
@@ -54,7 +54,7 @@ public class WuliuAdd implements Runnable{
         labelList.setListData(labels.toArray(new String[0]));
     }
 
-    public void resetPreviewArea() {
+    private void resetPreviewArea() {
         var filename = currentFile.getFileName().toString();
         var filetype = Simplemeta.typeByFilename(filename);
         var isImage = Simplemeta.isImage(filetype);

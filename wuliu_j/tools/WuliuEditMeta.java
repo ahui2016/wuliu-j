@@ -1,26 +1,31 @@
 package wuliu_j.tools;
 
+import com.fasterxml.jackson.jr.ob.JSON;
 import wuliu_j.common.DB;
 import wuliu_j.common.MyUtil;
 import wuliu_j.common.ProjectInfo;
 import wuliu_j.common.Simplemeta;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
-import java.util.Optional;
 
 public class WuliuEditMeta implements Runnable {
     private static ProjectInfo projInfo;
     private static DB db;
     private static final int fileListLimit = 20;
+    private static final int pictureSizeLimit = 200;
 
     private JFrame frame;
     private JTextField filenameTF;
     private JButton searchFilenameBtn;
     private JButton searchIdBtn;
+    private JButton updateBtn;
+    private JLabel previewArea;
 
     private JTextField fileIdTF;
     private JTextField readonlyIdTF;
@@ -52,6 +57,7 @@ public class WuliuEditMeta implements Runnable {
         searchIdBtn.addActionListener(new SearchIdListener());
         searchFilenameBtn.addActionListener(new SearchFilenameListener());
         idFileList.addMouseListener(new DoubleClickAdapter());
+        updateBtn.addActionListener(new UpdateBtnListener());
     }
 
     public void createGUI() {
@@ -88,6 +94,10 @@ public class WuliuEditMeta implements Runnable {
         fileIdPane.add(searchIdBtn);
         pane_2.add(fileIdPane);
 
+        previewArea = new JLabel();
+        // previewArea.setBorder(new EmptyBorder(0, 100, 0, 100));
+        pane_2.add(previewArea);
+
         readonlyIdTF = new JTextField("id");
         readonlyIdTF.setEditable(false);
         readonlyFilenameTF = new JTextField("filename");
@@ -109,7 +119,7 @@ public class WuliuEditMeta implements Runnable {
             pane_2.add(tf);
         });
 
-        var updateBtn = new JButton("Update");
+        updateBtn = new JButton("Update");
         pane_2.add(updateBtn);
 
         frame.add(BorderLayout.CENTER, pane_1);
@@ -140,6 +150,20 @@ public class WuliuEditMeta implements Runnable {
         utimeTF.setText(file.utime);
     }
 
+    private void resetPreviewArea(Simplemeta meta) {
+        if (meta.isImage()) {
+            try {
+                var file = MyUtil.FILES_PATH.resolve(meta.filename).toFile();
+                var image = MyUtil.getImageCropLimit(file, pictureSizeLimit);
+                previewArea.setIcon(new ImageIcon(image));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            previewArea.setIcon(new ImageIcon());
+        }
+    }
+
     class DoubleClickAdapter extends MouseAdapter {
         @Override
         public void mouseClicked(MouseEvent event) {
@@ -148,6 +172,7 @@ public class WuliuEditMeta implements Runnable {
                 var file = files.get(i);
                 fileIdTF.setText(file.id);
                 fillTheForm(file);
+                resetPreviewArea(file);
             }
         }
     }
@@ -187,33 +212,54 @@ public class WuliuEditMeta implements Runnable {
     class UpdateBtnListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-            var metaPart = new Simplemeta();
-            metaPart.like = Integer.parseInt(likeTF.getText());
-            metaPart.label = labelTF.getText();
-            metaPart.notes = notesTF.getText();
-            metaPart.ctime = ctimeTF.getText();
-            metaPart.utime = utimeTF.getText();
             var fileID = readonlyIdTF.getText();
             if (fileID.isBlank() || fileID.equals("id")) {
                 JOptionPane.showMessageDialog(frame, "請先尋找檔案");
                 return;
             }
+            var metaPart = new Simplemeta();
+            metaPart.id = fileID;
+            try {
+                metaPart.like = Integer.parseInt(likeTF.getText());
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(frame,
+                        "不允許輸入 [%s], 請輸入數字。".formatted(likeTF.getText()));
+                likeTF.requestFocusInWindow();
+                return;
+            }
+            metaPart.label = labelTF.getText();
+            metaPart.notes = notesTF.getText();
+            metaPart.ctime = ctimeTF.getText();
+            metaPart.utime = utimeTF.getText();
             var result = db.getMetaByID(fileID);
             if (result.isEmpty()) {
                 JOptionPane.showMessageDialog(frame, "找不到ID: " + fileID);
                 return;
             }
             var file = result.get();
-            var oldText = file.label+file.notes+ file.ctime+file.utime;
+            var oldText = file.label+file.notes+file.ctime+file.utime;
             var newText = metaPart.label+metaPart.notes+metaPart.ctime+metaPart.utime;
-            if (file.size.equals(metaPart.size) && oldText.equals(newText)) {
+            if (file.like.equals(metaPart.like) && oldText.equals(newText)) {
                 JOptionPane.showMessageDialog(frame, "無變化, 內容未更新。");
                 return;
             }
             db.updateMetaPart(metaPart);
+            try {
+                updateMetaFile(fileID);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+            JOptionPane.showMessageDialog(frame, "更新成功！");
+            System.exit(0);
         }
 
-        private void updateMetaFile(Simplemeta meta) {}
-        private void printResult() {}
+        private void updateMetaFile(String fileID) throws IOException {
+            var meta = db.getMetaByID(fileID).orElseThrow();
+            var metaPath = MyUtil.getSimplemetaPath(meta.filename);
+            var metaJson = JSON.std.with(JSON.Feature.PRETTY_PRINT_OUTPUT).asString(meta.toMap());
+            System.out.println("Update => " + metaPath);
+            Files.write(metaPath, metaJson.getBytes());
+            System.out.println(metaJson);
+        }
     }
 }
