@@ -19,6 +19,7 @@ public class MyUtil {
     public static final DateTimeFormatter RFC3339 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     public static final Path INPUT_PATH = Path.of("input");
     public static final Path FILES_PATH = Path.of("files");
+    public static final Path BUFFER_PATH = Path.of("buffer");
     public static final Path SIMPLEMETA_PATH = Path.of("simplemeta");
     public static final Path PROJ_INFO_PATH = Path.of("project.json");
     public static final String WULIU_J_DB = "wuliu_j.db";

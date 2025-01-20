@@ -47,7 +47,7 @@ public class WuliuAdd implements Runnable{
     }
 
     private void reset() {
-        currentFile = MyUtil.getOneFileFrom(MyUtil.INPUT_PATH);
+        loadCurrentFile();
         filenameText.setText(currentFile.getFileName().toString());
         resetPreviewArea();
         labels = db.getRecentLabels(recentLabelsLimit);
@@ -81,10 +81,10 @@ public class WuliuAdd implements Runnable{
         MyUtil.pathMustNotExists(MyUtil.getSimplemetaPath(meta.filename));
         var opt = db.getMetaByChecksum(meta.checksum);
         if (opt.isPresent()) {
-            var myMeta = opt.get();
-            System.out.printf(
-                    "已存在相同內容的檔案 ID:%s, Filename:%s%n",
-                    myMeta.id, myMeta.filename);
+            var conflict = opt.get();
+            System.out.println("已存在相同內容的檔案");
+            System.out.println("input: " + meta.filename);
+            System.out.println("files: " + conflict.filename);
             System.exit(0);
         }
     }
@@ -153,6 +153,7 @@ public class WuliuAdd implements Runnable{
         labelList = new JList<>(labels.toArray(new String[0]));
         labelList.addMouseListener(new DoubleClickAdapter());
         labelList.setFont(MyUtil.FONT_18);
+        labelList.setFixedCellWidth(250);
         pane_2.add(labelList);
 
         // 两个 alignment 必须同时设置才有效
@@ -162,7 +163,7 @@ public class WuliuAdd implements Runnable{
 
         frame.add(BorderLayout.CENTER, pane_1);
         frame.add(BorderLayout.EAST, pane_2);
-        frame.setSize(600, 550);
+        frame.setSize(700, 500);
         frame.setLocationRelativeTo(null); // 窗口居中
         frame.setVisible(true);
 

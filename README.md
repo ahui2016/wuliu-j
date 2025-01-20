@@ -20,3 +20,9 @@ Java version of Wuliu File Manager
 執行 MetaToSimple 之前, 請先執行 `wuliu-checksum` 進行檢查,
 因為執行 MetaToSimple 會更改摘要算法。
 
+## TODO
+
+- 检查数据库是否存在 wuliu_j.db
+- export/delete 功能整合到简单的 search 页面中
+- rename 页面类似 WuliuEditMeta
+- WuliuEditMeta 页面增加一个 like 按钮

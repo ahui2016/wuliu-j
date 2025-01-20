@@ -7,7 +7,6 @@ import wuliu_j.common.ProjectInfo;
 import wuliu_j.common.Simplemeta;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
@@ -15,7 +14,6 @@ import java.nio.file.Files;
 import java.util.List;
 
 public class WuliuEditMeta implements Runnable {
-    private static ProjectInfo projInfo;
     private static DB db;
     private static final int fileListLimit = 20;
     private static final int pictureSizeLimit = 200;
@@ -46,7 +44,7 @@ public class WuliuEditMeta implements Runnable {
     }
 
     static void initAndCheck() throws IOException {
-        projInfo = ProjectInfo.fromJsonFile(MyUtil.PROJ_INFO_PATH);
+        var projInfo = ProjectInfo.fromJsonFile(MyUtil.PROJ_INFO_PATH);
         MyUtil.checkNotBackup(projInfo);
         db = new DB(MyUtil.WULIU_J_DB);
     }

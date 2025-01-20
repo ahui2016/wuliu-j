@@ -67,4 +67,10 @@ public class Stmt {
             like=:like, label=:label, notes=:notes, ctime=:ctime, utime=:utime
         WHERE id=:id;
         """;
+
+    public static final String UPDATE_OVERWRITE_FILE = """
+        UPDATE simplemeta SET
+            checksum=:checksum, size=:size, utime=:utime
+        WHERE id=:id;
+        """;
 }

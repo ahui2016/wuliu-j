@@ -99,4 +99,11 @@ public class DB {
                         .bindMap(metaPart.toMap())
                         .execute());
     }
+
+    public void updateOverwriteFile(Simplemeta meta) {
+        jdbi.useHandle(handle ->
+                handle.createUpdate(Stmt.UPDATE_OVERWRITE_FILE)
+                        .bindMap(meta.toMap())
+                        .execute());
+    }
 }
