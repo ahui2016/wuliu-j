@@ -3,7 +3,6 @@ package wuliu_j.tools;
 import com.fasterxml.jackson.jr.ob.JSON;
 import wuliu_j.common.DB;
 import wuliu_j.common.MyUtil;
-import wuliu_j.common.ProjectInfo;
 import wuliu_j.common.Simplemeta;
 
 import javax.swing.*;

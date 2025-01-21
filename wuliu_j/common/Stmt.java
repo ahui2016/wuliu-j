@@ -20,6 +20,13 @@ public class Stmt {
         CREATE INDEX IF NOT EXISTS idx_simplemeta_label    ON simplemeta(label);
         CREATE INDEX IF NOT EXISTS idx_simplemeta_ctime    ON simplemeta(ctime);
         CREATE INDEX IF NOT EXISTS idx_simplemeta_utime    ON simplemeta(utime);
+        
+        CREATE TABLE IF NOT EXISTS file_checked
+        (
+          id         TEXT   PRIMARY KEY COLLATE NOCASE,
+          checked    TEXT   NOT NULL,
+          damaged    INT    NOT NULL
+        );
         """;
 
     public static final String INSERT_SIMPLEMETA = """

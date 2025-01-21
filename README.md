@@ -24,4 +24,3 @@ Java version of Wuliu File Manager
 
 - export/delete 功能整合到简单的 search 页面中
 - rename 页面类似 WuliuEditMeta
-- WuliuEditMeta 页面增加一个 like 按钮
