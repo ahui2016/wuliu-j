@@ -22,6 +22,7 @@ public class WuliuEditMeta implements Runnable {
     private JTextField filenameTF;
     private JButton searchFilenameBtn;
     private JButton searchIdBtn;
+    private JButton likeBtn;
     private JButton updateBtn;
     private JLabel previewArea;
 
@@ -55,6 +56,7 @@ public class WuliuEditMeta implements Runnable {
         searchIdBtn.addActionListener(new SearchIdListener());
         searchFilenameBtn.addActionListener(new SearchFilenameListener());
         idFileList.addMouseListener(new DoubleClickAdapter());
+        likeBtn.addActionListener(new LikeBtnListener());
         updateBtn.addActionListener(new UpdateBtnListener());
     }
 
@@ -117,7 +119,9 @@ public class WuliuEditMeta implements Runnable {
             pane_2.add(tf);
         });
 
+        likeBtn = new JButton("Like");
         updateBtn = new JButton("Update");
+        pane_2.add(likeBtn);
         pane_2.add(updateBtn);
 
         frame.add(BorderLayout.CENTER, pane_1);
@@ -126,15 +130,27 @@ public class WuliuEditMeta implements Runnable {
         frame.setLocationRelativeTo(null); // 窗口居中
         frame.setVisible(true);
 
-        frame.addWindowFocusListener(new WindowAdapter() {
-            public void windowGainedFocus(WindowEvent e) {
-                filenameTF.requestFocusInWindow();
-            }
-        });
+        filenameTF.requestFocusInWindow();
     }
 
     private List<String> metaToStringList(List<Simplemeta> metaList) {
-        return metaList.stream().map(file -> "[%s] %s".formatted(file.id, file.filename)).toList();
+        var heart = "❤️";
+        return metaList.stream().map(file -> "%s[%s] %s".formatted(
+                heart.repeat(file.like), file.id, file.filename)).toList();
+    }
+
+    private Integer getLike() {
+        var like = 0;
+        var likeStr = likeTF.getText();
+        if (likeStr.isBlank()) return 0;
+        try {
+            like = Integer.parseInt(likeStr);
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(frame,
+                    "不允許輸入 [%s], 請輸入數字。".formatted(likeStr));
+            like = -1;
+        }
+        return like;
     }
 
     private void fillTheForm(Simplemeta file) {
@@ -207,6 +223,19 @@ public class WuliuEditMeta implements Runnable {
         }
     }
 
+    class LikeBtnListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            var like = getLike();
+            if (like < 0) {
+                likeTF.requestFocusInWindow();
+                return;
+            }
+            like++;
+            likeTF.setText(like.toString());
+        }
+    }
+
     class UpdateBtnListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -217,14 +246,12 @@ public class WuliuEditMeta implements Runnable {
             }
             var metaPart = new Simplemeta();
             metaPart.id = fileID;
-            try {
-                metaPart.like = Integer.parseInt(likeTF.getText());
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(frame,
-                        "不允許輸入 [%s], 請輸入數字。".formatted(likeTF.getText()));
+            var like = getLike();
+            if (like < 0) {
                 likeTF.requestFocusInWindow();
                 return;
             }
+            metaPart.like = like;
             metaPart.label = labelTF.getText();
             metaPart.notes = notesTF.getText();
             metaPart.ctime = ctimeTF.getText();
