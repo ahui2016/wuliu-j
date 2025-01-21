@@ -13,14 +13,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WuliuOverwrite {
+    private static DB db;
+
     public static void main(String[] args) throws IOException {
-        var projInfo = ProjectInfo.fromJsonFile(MyUtil.PROJ_INFO_PATH);
-        MyUtil.checkNotBackup(projInfo);
-        var db = new DB(MyUtil.WULIU_J_DB);
+        initAndCheck();
         var files = getBufferFiles();
         for (var file : files) {
             overwriteFile(file, db);
         }
+    }
+
+    static void initAndCheck() throws IOException {
+        var projInfo = MyUtil.initCheck();
+        MyUtil.checkNotBackup(projInfo);
+        db = new DB(MyUtil.WULIU_J_DB);
     }
 
     private static List<Path> getBufferFiles() {

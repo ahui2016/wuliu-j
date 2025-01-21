@@ -16,7 +16,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 public class WuliuAdd implements Runnable{
-    private static ProjectInfo projInfo;
+    private static DB db;
     private static final int pictureSizeLimit = 300;
     private static final int recentLabelsLimit = 10;
 
@@ -28,22 +28,18 @@ public class WuliuAdd implements Runnable{
     private JTextField labelText;
     private JTextField notesText;
 
-    private final DB db = new DB(MyUtil.WULIU_J_DB);
     private Path currentFile;
     private Simplemeta currentMeta;
 
     public static void main(String[] args) throws IOException {
-        check();
+        initAndCheck();
         SwingUtilities.invokeLater(new WuliuAdd());
     }
 
-    static void check() throws IOException {
-        loadsProjInfo();
+    static void initAndCheck() throws IOException {
+        var projInfo = MyUtil.initCheck();
         MyUtil.checkNotBackup(projInfo);
-    }
-
-    private static void loadsProjInfo() throws IOException {
-        projInfo = ProjectInfo.fromJsonFile(MyUtil.PROJ_INFO_PATH);
+        db = new DB(MyUtil.WULIU_J_DB);
     }
 
     private void reset() {

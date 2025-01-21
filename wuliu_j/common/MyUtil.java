@@ -39,6 +39,12 @@ public class MyUtil {
         }
     }
 
+    public static void pathMustExists(Path path) {
+        if (Files.notExists(path)) {
+            throw new RuntimeException("Not Found: " + path);
+        }
+    }
+
     /**
      * 確保 path 不存在, 如果存在則拋出異常。 如果 path 不存在則無事發生。
      */
@@ -60,6 +66,11 @@ public class MyUtil {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static ProjectInfo initCheck() throws IOException {
+        pathMustExists(DB_PATH);
+        return ProjectInfo.fromJsonFile(MyUtil.PROJ_INFO_PATH);
     }
 
     public static void checkNotBackup(ProjectInfo info) {

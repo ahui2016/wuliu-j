@@ -44,7 +44,7 @@ public class WuliuEditMeta implements Runnable {
     }
 
     static void initAndCheck() throws IOException {
-        var projInfo = ProjectInfo.fromJsonFile(MyUtil.PROJ_INFO_PATH);
+        var projInfo = MyUtil.initCheck();
         MyUtil.checkNotBackup(projInfo);
         db = new DB(MyUtil.WULIU_J_DB);
     }
