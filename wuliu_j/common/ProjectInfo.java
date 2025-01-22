@@ -7,14 +7,14 @@ import java.util.List;
 import java.util.Map;
 
 public class ProjectInfo {
-    String RepoName;            // 用于判断资料夹是否 Wuliu 专案
-    String ProjectName;         // 备份时要求专案名称相同
-    boolean IsBackup;           // 是否副本（副本禁止添加、删除等）
-    List<String> Projects;      // 第一个是主专案，然后是备份专案
-    List<String> LastBackupAt;  // 上次备份时间
-    Integer CheckInterval;      // 检查完整性, 单位: day
-    Integer CheckSizeLimit;     // 检查完整性, 单位: MB
-    Integer ExportSizeLimit;    // 導出檔案體積上限，單位: MB
+    public String RepoName;            // 用于判断资料夹是否 Wuliu 专案
+    public String ProjectName;         // 备份时要求专案名称相同
+    public boolean IsBackup;           // 是否副本（副本禁止添加、删除等）
+    public List<String> Projects;      // 第一个是主专案，然后是备份专案
+    public List<String> LastBackupAt;  // 上次备份时间
+    public Integer CheckInterval;      // 检查完整性, 单位: day
+    public Integer CheckSizeLimit;     // 检查完整性, 单位: MB
+    public Integer ExportSizeLimit;    // 導出檔案體積上限，單位: MB
 
     public static ProjectInfo fromJsonFile(Path jsonPath) throws IOException {
         Map<String,Object> data = MyUtil.readJsonFileToMap(jsonPath);

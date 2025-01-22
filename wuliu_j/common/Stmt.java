@@ -27,6 +27,12 @@ public class Stmt {
           checked    TEXT   NOT NULL,
           damaged    INT    NOT NULL
         );
+
+        CREATE INDEX IF NOT EXISTS idx_file_checked_checked ON file_checked(checked);
+        """;
+
+    public static final String COUNT_SIMPLEMETA = """
+        SELECT count(id) FROM simplemeta;
         """;
 
     public static final String INSERT_SIMPLEMETA = """

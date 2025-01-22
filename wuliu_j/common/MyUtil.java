@@ -16,12 +16,15 @@ import java.util.List;
 import java.util.Map;
 
 public class MyUtil {
+    public static final int Day = 24 * 60 * 60;
     public static final DateTimeFormatter RFC3339 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     public static final Path INPUT_PATH = Path.of("input");
     public static final Path FILES_PATH = Path.of("files");
     public static final Path BUFFER_PATH = Path.of("buffer");
     public static final Path SIMPLEMETA_PATH = Path.of("simplemeta");
-    public static final Path PROJ_INFO_PATH = Path.of("project.json");
+    public static final String PROJECT_JSON = "project.json";
+    public static final Path PROJ_INFO_PATH = Path.of(PROJECT_JSON);
     public static final String WULIU_J_DB = "wuliu_j.db";
     public static final Path DB_PATH = Path.of(WULIU_J_DB);
 
@@ -70,7 +73,7 @@ public class MyUtil {
 
     public static ProjectInfo initCheck() throws IOException {
         pathMustExists(DB_PATH);
-        return ProjectInfo.fromJsonFile(MyUtil.PROJ_INFO_PATH);
+        return ProjectInfo.fromJsonFile(PROJ_INFO_PATH);
     }
 
     public static void checkNotBackup(ProjectInfo info) {

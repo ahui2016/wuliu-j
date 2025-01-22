@@ -27,7 +27,7 @@ public class DB {
     }
 
     public void insertSimplemeta(Map<String,Object> meta) {
-        jdbi.withHandle(handle ->
+        jdbi.useHandle(handle ->
                 handle.createUpdate(Stmt.INSERT_SIMPLEMETA)
                       .bindMap(meta).execute());
     }
@@ -37,13 +37,13 @@ public class DB {
     }
 
     public void updateSimplemeta(Simplemeta meta) {
-        jdbi.withHandle(handle ->
+        jdbi.useHandle(handle ->
                 handle.createUpdate(Stmt.UPDATE_SIMPLEMETA)
                       .bindMap(meta.toMap()).execute());
     }
 
     public void deleteSimplemeta(String id) {
-        jdbi.withHandle(handle ->
+        jdbi.useHandle(handle ->
                 handle.createUpdate(Stmt.DELETE_SIMPLEMETA)
                       .bind("id", id).execute());
     }
@@ -105,5 +105,12 @@ public class DB {
                 handle.createUpdate(Stmt.UPDATE_OVERWRITE_FILE)
                         .bindMap(meta.toMap())
                         .execute());
+    }
+
+    public long countSimplemeta() {
+        return jdbi.withHandle(handle ->
+                handle.select(Stmt.COUNT_SIMPLEMETA)
+                        .mapTo(long.class)
+                        .one());
     }
 }
