@@ -159,6 +159,7 @@ public class MyUtil {
     public static Path getSimplemetaPath(String filename) {
         return SIMPLEMETA_PATH.resolve(filename + ".json");
     }
+
 }
 
 class Picture {

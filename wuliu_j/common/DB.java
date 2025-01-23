@@ -113,4 +113,53 @@ public class DB {
                         .mapTo(long.class)
                         .one());
     }
+
+    public List<String> getIdsNeedCheck(String datetime) {
+        return jdbi.withHandle(handle ->
+                handle.select(Stmt.GET_IDS_NEED_CHECK)
+                        .bind("checked", datetime)
+                        .mapTo(String.class)
+                        .list());
+    }
+
+    public List<String> getDamagedIds() {
+        return jdbi.withHandle(handle ->
+                handle.select(Stmt.GET_DAMAGED_IDS)
+                        .mapTo(String.class)
+                        .list());
+    }
+
+    public void insertFileChecked(String fileID, String checked, int damaged) {
+        jdbi.useHandle(handle ->
+                handle.createUpdate(Stmt.INSERT_FILE_CHECKED)
+                        .bind("id", fileID)
+                        .bind("checked", checked)
+                        .bind("damaged", damaged)
+                        .execute());
+    }
+
+    public void updateCheckedDamaged(String fileID, String checked, int damaged) {
+        jdbi.useHandle(handle ->
+                handle.createUpdate(Stmt.UPDATE_CHECKED_DAMAGED)
+                        .bind("checked", checked)
+                        .bind("damaged", damaged)
+                        .bind("id", fileID)
+                        .execute());
+    }
+
+    public void renewChecked() {
+        jdbi.useHandle(handle ->
+                handle.createScript(Stmt.DELETE_ALL_FILE_CHECKED).execute());
+        jdbi.useHandle(handle -> {
+            var allMetas = handle.select(Stmt.GET_ALL_METAS).mapToMap().stream();
+            allMetas.forEach(metaMap -> {
+                var meta = Simplemeta.ofMap(metaMap);
+                handle.createUpdate(Stmt.INSERT_FILE_CHECKED)
+                        .bind("id", meta.id)
+                        .bind("checked", meta.utime)
+                        .bind("damaged", 0)
+                        .execute();
+            });
+        });
+    }
 }

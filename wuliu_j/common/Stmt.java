@@ -35,6 +35,10 @@ public class Stmt {
         SELECT count(id) FROM simplemeta;
         """;
 
+    public static final String GET_ALL_METAS = """
+        SELECT * FROM simplemeta;
+        """;
+
     public static final String INSERT_SIMPLEMETA = """
         INSERT INTO simplemeta
                ( id,  filename,  checksum,  size,  type,  like,  label,  notes,  ctime,  utime)
@@ -61,6 +65,14 @@ public class Stmt {
         SELECT * FROM simplemeta WHERE checksum=:checksum;
         """;
 
+    public static final String GET_IDS_NEED_CHECK = """
+        SELECT id FROM file_checked WHERE checked<:checked;
+        """;
+
+    public static final String GET_DAMAGED_IDS = """
+        SELECT id FROM file_checked WHERE damaged>0;
+        """;
+
     public static final String GET_META_BY_ID = """
         SELECT * FROM simplemeta WHERE id=:id;
         """;
@@ -85,5 +97,19 @@ public class Stmt {
         UPDATE simplemeta SET
             checksum=:checksum, size=:size, utime=:utime
         WHERE id=:id;
+        """;
+
+    public static final String INSERT_FILE_CHECKED = """
+        INSERT INTO file_checked (id,  checked,  damaged)
+                         VALUES (:id, :checked, :damaged);
+        """;
+
+    public static final String UPDATE_CHECKED_DAMAGED = """
+        UPDATE file_checked SET checked=:checked, damaged=:damaged
+        WHERE id=:id;
+        """;
+
+    public static final String DELETE_ALL_FILE_CHECKED = """
+        DELETE FROM file_checked;
         """;
 }
