@@ -27,9 +27,15 @@ public class DB {
     }
 
     public void insertSimplemeta(Map<String,Object> meta) {
-        jdbi.useHandle(handle ->
-                handle.createUpdate(Stmt.INSERT_SIMPLEMETA)
-                      .bindMap(meta).execute());
+        jdbi.useHandle(handle -> {
+            handle.createUpdate(Stmt.INSERT_SIMPLEMETA)
+                    .bindMap(meta).execute();
+            handle.createUpdate(Stmt.INSERT_FILE_CHECKED)
+                    .bind("id", meta.get("id"))
+                    .bind("checked", meta.get("utime"))
+                    .bind("damaged", 0)
+                    .execute();
+        });
     }
 
     public void insertSimplemeta(Simplemeta meta) {
@@ -43,9 +49,12 @@ public class DB {
     }
 
     public void deleteSimplemeta(String id) {
-        jdbi.useHandle(handle ->
-                handle.createUpdate(Stmt.DELETE_SIMPLEMETA)
-                      .bind("id", id).execute());
+        jdbi.useHandle(handle -> {
+            handle.createUpdate(Stmt.DELETE_SIMPLEMETA)
+                    .bind("id", id).execute();
+            handle.createUpdate(Stmt.DELETE_FILE_CHECKED)
+                    .bind("id", id).execute();
+        });
     }
 
     public List<String> getRecentLabels(int limit) {
@@ -129,13 +138,11 @@ public class DB {
                         .list());
     }
 
-    public void insertFileChecked(String fileID, String checked, int damaged) {
-        jdbi.useHandle(handle ->
-                handle.createUpdate(Stmt.INSERT_FILE_CHECKED)
-                        .bind("id", fileID)
-                        .bind("checked", checked)
-                        .bind("damaged", damaged)
-                        .execute());
+    public Optional<Integer> getDamagedByID(String fileID) {
+        return jdbi.withHandle(handle ->
+                handle.select(Stmt.GET_DAMAGED_BY_ID)
+                        .mapTo(Integer.class)
+                        .findOne());
     }
 
     public void updateCheckedDamaged(String fileID, String checked, int damaged) {

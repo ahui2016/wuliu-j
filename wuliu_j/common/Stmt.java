@@ -73,6 +73,10 @@ public class Stmt {
         SELECT id FROM file_checked WHERE damaged>0;
         """;
 
+    public static final String GET_DAMAGED_BY_ID = """
+        SELECT damaged FROM file_checked WHERE id=:id;
+        """;
+
     public static final String GET_META_BY_ID = """
         SELECT * FROM simplemeta WHERE id=:id;
         """;
@@ -107,6 +111,10 @@ public class Stmt {
     public static final String UPDATE_CHECKED_DAMAGED = """
         UPDATE file_checked SET checked=:checked, damaged=:damaged
         WHERE id=:id;
+        """;
+
+    public static final String DELETE_FILE_CHECKED = """
+        DELETE FROM file_checked WHERE id=:id;
         """;
 
     public static final String DELETE_ALL_FILE_CHECKED = """
