@@ -8,8 +8,8 @@ import java.util.Map;
 import java.util.Optional;
 
 public class DB {
-    private final String path;
-    private final Jdbi jdbi;
+    public final String path;
+    public final Jdbi jdbi;
 
     public String getPath() {
         return this.path;
@@ -116,9 +116,23 @@ public class DB {
                         .execute());
     }
 
-    public long countSimplemeta() {
+    public int countSimplemeta() {
         return jdbi.withHandle(handle ->
                 handle.select(Stmt.COUNT_SIMPLEMETA)
+                        .mapTo(int.class)
+                        .one());
+    }
+
+    public int countDamaged() {
+        return jdbi.withHandle(handle ->
+                handle.select(Stmt.COUNT_DAMAGED)
+                        .mapTo(int.class)
+                        .one());
+    }
+
+    public long sumMetaSize() {
+        return jdbi.withHandle(handle ->
+                handle.select(Stmt.SUM_META_SIZE)
                         .mapTo(long.class)
                         .one());
     }

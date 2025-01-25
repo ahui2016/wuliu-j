@@ -47,8 +47,8 @@ public class Stmt {
 
     public static final String UPDATE_SIMPLEMETA = """
         UPDATE simplemeta SET
-            filename=:filename, checksum=:checksum, size=:size, type=:type,
-            like=:like, label=:label, notes=:notes, ctime=:ctime, utime=:utime
+            checksum=:checksum, size=:size, type=:type, like=:like,
+            label=:label, notes=:notes, ctime=:ctime, utime=:utime
         WHERE id=:id;
         """;
 
@@ -73,6 +73,10 @@ public class Stmt {
         SELECT id FROM file_checked WHERE damaged>0;
         """;
 
+    public static final String COUNT_DAMAGED = """
+        SELECT count(id) FROM file_checked WHERE damaged>0;
+        """;
+
     public static final String GET_DAMAGED_BY_ID = """
         SELECT damaged FROM file_checked WHERE id=:id;
         """;
@@ -95,6 +99,10 @@ public class Stmt {
         UPDATE simplemeta SET
             like=:like, label=:label, notes=:notes, ctime=:ctime, utime=:utime
         WHERE id=:id;
+        """;
+
+    public static final String SUM_META_SIZE = """
+        SELECT sum(size) FROM simplemeta;
         """;
 
     public static final String UPDATE_OVERWRITE_FILE = """

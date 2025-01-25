@@ -94,7 +94,7 @@ public class WuliuChecksum implements Runnable {
         gotoPane2Btn = new JButton("Repair");
         gotoPane2Btn.addActionListener(_ -> gotoPane2());
         pane_1.add(gotoPane2Btn);
-        // gotoPane2Btn.setVisible(false);
+        gotoPane2Btn.setVisible(false);
 
         frame.add(BorderLayout.CENTER, pane_1);
         frame.setSize(500, 600);
@@ -159,7 +159,7 @@ public class WuliuChecksum implements Runnable {
             msgArea.append("已損壞檔案ID:\n");
             msgArea.append(String.join(", ", damagedIds));
         }
-        // gotoPane2Btn.setVisible(damagedFiles.size() > 0);
+        gotoPane2Btn.setVisible(damagedIds.size() > 0);
     }
 
     /**
