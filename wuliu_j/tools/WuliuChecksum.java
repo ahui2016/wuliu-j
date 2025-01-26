@@ -53,7 +53,7 @@ public class WuliuChecksum implements Runnable {
     @Override
     public void run() {
         createGUI();
-        projList.setListData(projInfo.Projects.toArray(new String[0]));
+        projList.setListData(projInfo.projects.toArray(new String[0]));
         projList.addMouseListener(new DoubleClickAdapter());
         renewBtn.addActionListener(new RenewBtnListener());
         checkBtn.addActionListener(new CheckBtnListener());
@@ -81,7 +81,9 @@ public class WuliuChecksum implements Runnable {
 
         msgArea = new JTextArea(15, textCols);
         msgArea.setFont(MyUtil.FONT_16);
-        pane_1.add(msgArea);
+        pane_1.add(new JScrollPane(msgArea,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER));
 
         renewBtn = new JButton("Renew");
         var spacer = new JLabel(" ");
@@ -111,7 +113,7 @@ public class WuliuChecksum implements Runnable {
         pane_2.add(currentProjTF);
         frame.add(pane_2);
 
-        projects2 = projInfo.Projects.stream().filter(p ->
+        projects2 = projInfo.projects.stream().filter(p ->
                 !projRoot.equals(Path.of(p))).toList();
 
         var label_2 = new JLabel("請按兩下選擇另一個專案:");
@@ -131,7 +133,9 @@ public class WuliuChecksum implements Runnable {
 
         msgArea2 = new JTextArea(10, textCols);
         msgArea2.setFont(MyUtil.FONT_16);
-        pane_2.add(msgArea2);
+        pane_2.add(new JScrollPane(msgArea2,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER));
 
         var repairBtn = new JButton("Repair");
         repairBtn.addActionListener(new RepairBtnListener());
@@ -147,13 +151,13 @@ public class WuliuChecksum implements Runnable {
     }
 
     private void printInfo(boolean clear) {
-        idsNeedCheck = getIdsNeedCheck(projInfo.CheckInterval);
+        idsNeedCheck = getIdsNeedCheck(projInfo.checkInterval);
         var damagedIds = db.getDamagedIds();
         if (clear) msgArea.setText("");
         msgArea.append("檔案總數: %d%n".formatted(db.countSimplemeta()));
-        msgArea.append("檢查周期: %d 天%n".formatted(projInfo.CheckInterval));
+        msgArea.append("檢查周期: %d 天%n".formatted(projInfo.checkInterval));
         msgArea.append("待檢查檔案數: %d%n".formatted(idsNeedCheck.size()));
-        msgArea.append("單次檢查上限: %d MB%n".formatted(projInfo.CheckSizeLimit));
+        msgArea.append("單次檢查上限: %d MB%n".formatted(projInfo.checkSizeLimit));
         msgArea.append("已損壞檔案數: %d%n".formatted(damagedIds.size()));
         if (damagedIds.size() > 0) {
             msgArea.append("已損壞檔案ID:\n");
@@ -177,7 +181,7 @@ public class WuliuChecksum implements Runnable {
         public void mouseClicked(MouseEvent event) {
             if (event.getClickCount() == 2) {
                 int i = projList.locationToIndex(event.getPoint());
-                projRoot = Path.of(projInfo.Projects.get(i));
+                projRoot = Path.of(projInfo.projects.get(i));
                 db = new DB(projRoot.resolve(MyUtil.WULIU_J_DB).toString());
                 currentProjTF.setText(projRoot.toAbsolutePath().normalize().toString());
                 printInfo(true);
@@ -266,7 +270,7 @@ public class WuliuChecksum implements Runnable {
             int damagedN = 0;
             int checkN = 0;
             long checkSizeTotal = 0L;
-            long checkSizeLimit = projInfo.CheckSizeLimit * MB;
+            long checkSizeLimit = projInfo.checkSizeLimit * MB;
             msgArea.append("\n\n開始檢查\n");
             for (var fileID : idsNeedCheck) {
                 msgArea.append(".");
@@ -284,7 +288,7 @@ public class WuliuChecksum implements Runnable {
             msgArea.append("\n本次檢查檔案數量: " + checkN);
             msgArea.append("\n  其中己損壞檔案: " + damagedN);
             gotoPane2Btn.setVisible(damagedN > 0);
-            idsNeedCheck = getIdsNeedCheck(projInfo.CheckInterval);
+            idsNeedCheck = getIdsNeedCheck(projInfo.checkInterval);
             msgArea.append("\n剩餘待檢查檔案: " + idsNeedCheck.size());
         }
     }

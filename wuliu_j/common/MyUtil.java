@@ -77,7 +77,7 @@ public class MyUtil {
     }
 
     public static void checkNotBackup(ProjectInfo info) {
-        if (info.IsBackup) {
+        if (info.isBackup) {
             throw new RuntimeException("這是備份專案, 不可使用該功能");
         }
     }

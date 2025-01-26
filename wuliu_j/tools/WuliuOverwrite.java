@@ -2,7 +2,6 @@ package wuliu_j.tools;
 
 import wuliu_j.common.DB;
 import wuliu_j.common.MyUtil;
-import wuliu_j.common.ProjectInfo;
 import wuliu_j.common.Simplemeta;
 
 import java.io.IOException;

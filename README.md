@@ -26,3 +26,5 @@ Java version of Wuliu File Manager
 - rename 页面类似 WuliuEditMeta
 - WuliuChecksum 增加一個 Repair 按鈕
 - WuliuAdd 和 WuliuDelete 要維護 file_checked
+- WuliuChecksum 每次检查孤儿？
+- WuliuBackup 处理 project.json
