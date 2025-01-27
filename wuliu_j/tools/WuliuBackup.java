@@ -149,10 +149,21 @@ public class WuliuBackup implements Runnable {
         msgArea.append("上次備份  %s%n".formatted(lastBackup2));
         msgArea.append("\n");
         var sizeDiff = projStat_1.totalSize - projStat_2.totalSize;
-        var timeDiff = lastBackup1.equals(lastBackup2) ? "相同" : "不同";
         msgArea.append("專案1檔案數量 - 專案2檔案數量 = %d%n".formatted(projStat_1.totalFiles-projStat_2.totalFiles));
         msgArea.append("專案1檔案體積 - 專案2檔案體積 = %s%n".formatted(MyUtil.fileSizeToString(sizeDiff)));
-        msgArea.append("上次備份時間: %s%n".formatted(timeDiff));
+    }
+
+    private void syncProjInfo() throws IOException {
+        var now = MyUtil.timeNowRFC3339();
+        projStat_1.projInfo.lastBackupAt.set(0, now);
+        projStat_1.projInfo.lastBackupAt.set(bkProjIndex, now);
+        msgArea.append("\nUpdate => " + MyUtil.PROJ_INFO_PATH);
+        var infoMap = projStat_1.projInfo.toMap();
+        MyUtil.writeJsonToFilePretty(infoMap, MyUtil.PROJ_INFO_PATH.toFile());
+        infoMap.put("IsBackup", true);
+        var bkProjInfoPath = projStat_2.projRoot.resolve(MyUtil.PROJECT_JSON);
+        msgArea.append("\nUpdate => " + bkProjInfoPath);
+        MyUtil.writeJsonToFilePretty(infoMap, bkProjInfoPath.toFile());
     }
 
     class DoubleClickAdapter extends MouseAdapter {
@@ -189,11 +200,16 @@ public class WuliuBackup implements Runnable {
             var filesChanged = new FilesChanged(
                     projStat_1.projRoot, projStat_2.projRoot, projStat_1.db, projStat_2.db);
             if (filesChanged.count() == 0) {
-                msgArea.append("沒有需要備份的檔案。");
+                msgArea.append("沒有需要備份的檔案。\n");
                 return;
             }
             msgArea.append("準備結束, 開始備份 ( %d 個檔案)%n".formatted(filesChanged.count()));
             filesChanged.syncOneWay(msgArea);
+            try {
+                syncProjInfo();
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
             msgArea.append("\n備份結束。\n");
         }
     }
