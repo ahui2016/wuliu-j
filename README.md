@@ -24,7 +24,7 @@ Java version of Wuliu File Manager
 
 - export/delete 功能整合到简单的 search 页面中
 - rename 页面类似 WuliuEditMeta
-- WuliuChecksum 增加一個 Repair 按鈕
-- WuliuAdd 和 WuliuDelete 要維護 file_checked
-- WuliuChecksum 每次检查孤儿？
-- WuliuBackup 处理 project.json
+- WuliuChecksum 每次检查孤儿？??
+- 初始化 project.json
+
+

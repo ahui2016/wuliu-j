@@ -19,6 +19,7 @@ import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.*;
 import java.util.List;
 
 public class WuliuChecksum implements Runnable {
@@ -169,7 +170,7 @@ public class WuliuChecksum implements Runnable {
     /**
      * 檢查檔案是否損壞, 若未損壞則返回 0, 若已損壞則返回大於零的整數。
      */
-    public int checkFileIsDamaged(Path projRoot, Simplemeta meta) {
+    private int checkFileIsDamaged(Path projRoot, Simplemeta meta) {
         var filePath = projRoot.resolve("files", meta.filename);
         var checksumNow = Simplemeta.getFileSHA1(filePath);
         var ok = meta.checksum.equals(checksumNow);
@@ -266,6 +267,12 @@ public class WuliuChecksum implements Runnable {
                 JOptionPane.showMessageDialog(frame, "沒有需要檢查的檔案");
                 return;
             }
+            var orphans = new MyOrphans(projRoot, msgArea);
+            var orphansResult = orphans.checkOrphans();
+            if (orphansResult.isPresent()) {
+                JOptionPane.showMessageDialog(frame, orphansResult.get());
+                return;
+            }
             var now = MyUtil.timeNowRFC3339();
             int damagedN = 0;
             int checkN = 0;
@@ -306,6 +313,68 @@ public class WuliuChecksum implements Runnable {
                 msgArea.append("完成。\n\n");
                 printInfo(false);
             }
+        }
+    }
+}
+
+class MyOrphans {
+    private JTextArea textArea;
+    private Path filesFolder;
+    private Path metaFolder;
+    private Set<String> filesOrphans;
+    private Set<String> metaOrphans;
+
+    MyOrphans(Path root, JTextArea textArea) {
+        this.textArea = textArea;
+        filesFolder = root.resolve("files");
+        metaFolder = root.resolve("simplemeta");
+        var filesList = MyUtil.getFilenamesFrom(filesFolder);
+        var metaTrimList = getMetaNamesTrim();
+        filesOrphans = inFirstListOnly(filesList, metaTrimList);
+        metaOrphans = inFirstListOnly(metaTrimList, filesList);
+    }
+
+    Optional<String> checkOrphans() {
+        if (filesOrphans.isEmpty() && metaOrphans.isEmpty()) {
+            return Optional.empty();
+        }
+        if (!filesOrphans.isEmpty()) printFilesOrphans(filesOrphans);
+        if (!metaOrphans.isEmpty()) printMetaOrphans(metaOrphans);
+        return Optional.of("發現孤立檔案, 請先處理。");
+    }
+
+    private void printFilesOrphans(Set<String> filesOrphans) {
+        if (filesOrphans.isEmpty()) {
+            return;
+        }
+        textArea.append("\n在 %s 中發現孤立檔案:\n".formatted(filesFolder));
+        filesOrphans.forEach(file -> textArea.append(file+"\n"));
+    }
+
+    private void printMetaOrphans(Set<String> metaOrphans) {
+        if (metaOrphans.isEmpty()) {
+            return;
+        }
+        textArea.append("\n在 %s 中發現孤立檔案:\n".formatted(metaFolder));
+        metaOrphans.forEach(file -> textArea.append(file+".json\n"));
+    }
+
+    private Set<String> inFirstListOnly(List<String> firstList, List<String> otherList) {
+        Set<String> firstSet = new HashSet<>(firstList);
+        Set<String> otherSet = new HashSet<>(otherList);
+        firstSet.removeAll(otherSet);
+        return firstSet;
+    }
+
+    private List<String> getMetaNamesTrim() {
+        var n = ".json".length();
+        try (var files = Files.list(metaFolder)) {
+            return files.map(f -> {
+                var jsonFilename = f.getFileName().toString();
+                return jsonFilename.substring(0, jsonFilename.length() - n);
+            }).toList();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }

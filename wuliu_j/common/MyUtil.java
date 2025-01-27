@@ -12,8 +12,10 @@ import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class MyUtil {
     public static final int Day = 24 * 60 * 60;
@@ -122,6 +124,14 @@ public class MyUtil {
                 System.exit(0);
             }
             return maybe.get();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static List<String> getFilenamesFrom(Path folder) {
+        try (var files = Files.list(folder)) {
+            return files.map(f -> f.getFileName().toString()).toList();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
