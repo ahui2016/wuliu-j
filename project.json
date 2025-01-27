@@ -1,0 +1,8 @@
+{
+    "ProjectName": "my-first-wuliu-project",
+    "IsBackup": false,
+    "Projects": ["."],
+    "CheckInterval": 90,
+    "CheckSizeLimit": 1024,
+    "ExportSizeLimit": 300
+}

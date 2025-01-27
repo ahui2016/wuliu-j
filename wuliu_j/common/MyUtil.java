@@ -12,12 +12,11 @@ import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class MyUtil {
+    public static final String RepoURL = "https://github.com/ahui2016/wuliu-j";
     public static final int Day = 24 * 60 * 60;
     public static final DateTimeFormatter RFC3339 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 

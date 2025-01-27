@@ -19,7 +19,6 @@ import java.util.Optional;
 public class WuliuBackup implements Runnable {
     private static final int textCols = 35;
 
-    private static int bkProjIndex;
     private static ProjectStatus projStat_1;
     private static ProjectStatus projStat_2;
 
@@ -31,7 +30,6 @@ public class WuliuBackup implements Runnable {
     private static JButton backupBtn;
 
     private JFrame frame;
-    private JPanel pane_1;
 
     public static void main(String[] args) throws IOException {
         projStat_1 = new ProjectStatus(Path.of(".").toAbsolutePath().normalize());
@@ -54,7 +52,7 @@ public class WuliuBackup implements Runnable {
         frame = new JFrame("Wuliu Checksum");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        pane_1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        var pane_1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
         pane_1.add(new JLabel("專案 1"));
         proj1TF = new JTextField(textCols);
         proj1TF.setFont(MyUtil.FONT_16);
@@ -102,7 +100,7 @@ public class WuliuBackup implements Runnable {
         }
         if (bkProjects.isEmpty()) {
             return Optional.of(
-            "無備份專案。添加備份專案的方法請參閱\n"+projStat_1.projInfo.repoURL);
+            "無備份專案。添加備份專案的方法請參閱\n"+MyUtil.RepoURL);
         }
         if (projStat_1.totalDamaged + projStat_2.totalDamaged > 0) {
             return Optional.of("發現損壞的檔案, 請使用 WuliuChecksum 進行修復。");
@@ -132,38 +130,21 @@ public class WuliuBackup implements Runnable {
 
     void printStatus() {
         var totalSize = MyUtil.fileSizeToString(projStat_1.totalSize);
-        var lastBackup1 = projStat_1.projInfo.lastBackupAt.getFirst();
         msgArea.setText("");
         msgArea.append("專案 1     %s%n".formatted(projStat_1.projRoot));
         msgArea.append("檔案數量  %d%n".formatted(projStat_1.totalFiles));
         msgArea.append("體積合計  %s%n".formatted(totalSize));
         msgArea.append("受損檔案  %d%n".formatted(projStat_1.totalDamaged));
-        msgArea.append("上次備份  %s%n".formatted(lastBackup1));
         msgArea.append("\n");
         totalSize = MyUtil.fileSizeToString(projStat_2.totalSize);
-        var lastBackup2 = projStat_1.projInfo.lastBackupAt.get(bkProjIndex);
         msgArea.append("專案 2     %s%n".formatted(projStat_2.projRoot));
         msgArea.append("檔案數量  %d%n".formatted(projStat_2.totalFiles));
         msgArea.append("體積合計  %s%n".formatted(totalSize));
         msgArea.append("受損檔案  %d%n".formatted(projStat_2.totalDamaged));
-        msgArea.append("上次備份  %s%n".formatted(lastBackup2));
         msgArea.append("\n");
         var sizeDiff = projStat_1.totalSize - projStat_2.totalSize;
         msgArea.append("專案1檔案數量 - 專案2檔案數量 = %d%n".formatted(projStat_1.totalFiles-projStat_2.totalFiles));
         msgArea.append("專案1檔案體積 - 專案2檔案體積 = %s%n".formatted(MyUtil.fileSizeToString(sizeDiff)));
-    }
-
-    private void syncProjInfo() throws IOException {
-        var now = MyUtil.timeNowRFC3339();
-        projStat_1.projInfo.lastBackupAt.set(0, now);
-        projStat_1.projInfo.lastBackupAt.set(bkProjIndex, now);
-        msgArea.append("\nUpdate => " + MyUtil.PROJ_INFO_PATH);
-        var infoMap = projStat_1.projInfo.toMap();
-        MyUtil.writeJsonToFilePretty(infoMap, MyUtil.PROJ_INFO_PATH.toFile());
-        infoMap.put("IsBackup", true);
-        var bkProjInfoPath = projStat_2.projRoot.resolve(MyUtil.PROJECT_JSON);
-        msgArea.append("\nUpdate => " + bkProjInfoPath);
-        MyUtil.writeJsonToFilePretty(infoMap, bkProjInfoPath.toFile());
     }
 
     class DoubleClickAdapter extends MouseAdapter {
@@ -171,7 +152,6 @@ public class WuliuBackup implements Runnable {
         public void mouseClicked(MouseEvent event) {
             if (event.getClickCount() == 2) {
                 int i = bkProjList.locationToIndex(event.getPoint());
-                bkProjIndex = i+1;
                 var bkProjRoot = Path.of(bkProjects.get(i));
                 try {
                     projStat_2 = new ProjectStatus(bkProjRoot);
@@ -205,11 +185,6 @@ public class WuliuBackup implements Runnable {
             }
             msgArea.append("準備結束, 開始備份 ( %d 個檔案)%n".formatted(filesChanged.count()));
             filesChanged.syncOneWay(msgArea);
-            try {
-                syncProjInfo();
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
             msgArea.append("\n備份結束。\n");
         }
     }

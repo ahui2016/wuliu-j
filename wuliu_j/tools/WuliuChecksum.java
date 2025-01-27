@@ -27,6 +27,7 @@ public class WuliuChecksum implements Runnable {
 
     private static DB db;
     private static DB db2;
+    private static MyOrphans orphans;
     private static ProjectInfo projInfo;
     private static Path projRoot;
     private static Path projRoot2;
@@ -54,6 +55,7 @@ public class WuliuChecksum implements Runnable {
     @Override
     public void run() {
         createGUI();
+        orphans = new MyOrphans(projRoot, msgArea);
         projList.setListData(projInfo.projects.toArray(new String[0]));
         projList.addMouseListener(new DoubleClickAdapter());
         renewBtn.addActionListener(new RenewBtnListener());
@@ -160,11 +162,11 @@ public class WuliuChecksum implements Runnable {
         msgArea.append("待檢查檔案數: %d%n".formatted(idsNeedCheck.size()));
         msgArea.append("單次檢查上限: %d MB%n".formatted(projInfo.checkSizeLimit));
         msgArea.append("已損壞檔案數: %d%n".formatted(damagedIds.size()));
-        if (damagedIds.size() > 0) {
+        if (!damagedIds.isEmpty()) {
             msgArea.append("已損壞檔案ID:\n");
             msgArea.append(String.join(", ", damagedIds));
         }
-        gotoPane2Btn.setVisible(damagedIds.size() > 0);
+        gotoPane2Btn.setVisible(!damagedIds.isEmpty());
     }
 
     /**
@@ -267,10 +269,9 @@ public class WuliuChecksum implements Runnable {
                 JOptionPane.showMessageDialog(frame, "沒有需要檢查的檔案");
                 return;
             }
-            var orphans = new MyOrphans(projRoot, msgArea);
-            var orphansResult = orphans.checkOrphans();
-            if (orphansResult.isPresent()) {
-                JOptionPane.showMessageDialog(frame, orphansResult.get());
+            var orphansTotal = orphans.checkOrphans();
+            if (orphansTotal > 0) {
+                JOptionPane.showMessageDialog(frame, "發現孤立檔案, 請先處理。");
                 return;
             }
             var now = MyUtil.timeNowRFC3339();
@@ -318,29 +319,35 @@ public class WuliuChecksum implements Runnable {
 }
 
 class MyOrphans {
-    private JTextArea textArea;
-    private Path filesFolder;
-    private Path metaFolder;
-    private Set<String> filesOrphans;
-    private Set<String> metaOrphans;
+    private final JTextArea textArea;
+    private final Path filesFolder;
+    private final Path metaFolder;
+    private boolean isChecked = false;
+    private int total;
 
     MyOrphans(Path root, JTextArea textArea) {
         this.textArea = textArea;
         filesFolder = root.resolve("files");
         metaFolder = root.resolve("simplemeta");
-        var filesList = MyUtil.getFilenamesFrom(filesFolder);
-        var metaTrimList = getMetaNamesTrim();
-        filesOrphans = inFirstListOnly(filesList, metaTrimList);
-        metaOrphans = inFirstListOnly(metaTrimList, filesList);
     }
 
-    Optional<String> checkOrphans() {
-        if (filesOrphans.isEmpty() && metaOrphans.isEmpty()) {
-            return Optional.empty();
+    /**
+     * @return 返回孤立檔案數量合計。
+     */
+    int checkOrphans() {
+        if (isChecked) {
+            return total;
+        } else {
+            isChecked = true;
         }
+        var filesList = MyUtil.getFilenamesFrom(filesFolder);
+        var metaTrimList = getMetaNamesTrim();
+        var filesOrphans = inFirstListOnly(filesList, metaTrimList);
+        var metaOrphans = inFirstListOnly(metaTrimList, filesList);
         if (!filesOrphans.isEmpty()) printFilesOrphans(filesOrphans);
         if (!metaOrphans.isEmpty()) printMetaOrphans(metaOrphans);
-        return Optional.of("發現孤立檔案, 請先處理。");
+        total = filesOrphans.size() + metaOrphans.size();
+        return total;
     }
 
     private void printFilesOrphans(Set<String> filesOrphans) {
