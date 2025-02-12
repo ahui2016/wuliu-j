@@ -1,6 +1,5 @@
 package wuliu_j.tools;
 
-import com.fasterxml.jackson.jr.ob.JSON;
 import wuliu_j.common.DB;
 import wuliu_j.common.MyUtil;
 import wuliu_j.common.Simplemeta;
@@ -11,36 +10,33 @@ import java.awt.event.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Optional;
+import java.util.regex.Pattern;
 
-public class WuliuEditMeta implements Runnable {
+public class WuliuRename implements Runnable {
     private static DB db;
     private static final int fileListLimit = 20;
     private static final int pictureSizeLimit = 200;
 
     private JFrame frame;
-    private JTextField filenameTF;
     private JButton searchFilenameBtn;
     private JButton searchIdBtn;
-    private JButton likeBtn;
-    private JButton updateBtn;
+    private JButton renameBtn;
     private JLabel previewArea;
 
     private JTextField fileIdTF;
     private JTextField readonlyIdTF;
-    private JTextField readonlyFilenameTF;
-    private JTextField readonlySizeTF;
-    private JTextField likeTF;
-    private JTextField labelTF;
-    private JTextField notesTF;
-    private JTextField ctimeTF;
-    private JTextField utimeTF;
+    private JTextField filenameTF;
+    private JTextField filenameTF_2;
+    private JTextField readonlyLabelTF;
+    private JTextField readonlyNotesTF;
 
     private List<Simplemeta> files;
     private JList<String> idFileList;
 
     public static void main(String[] args) throws IOException {
         initAndCheck();
-        SwingUtilities.invokeLater(new WuliuEditMeta());
+        SwingUtilities.invokeLater(new WuliuRename());
     }
 
     static void initAndCheck() throws IOException {
@@ -55,12 +51,11 @@ public class WuliuEditMeta implements Runnable {
         searchIdBtn.addActionListener(new SearchIdListener());
         searchFilenameBtn.addActionListener(new SearchFilenameListener());
         idFileList.addMouseListener(new DoubleClickAdapter());
-        likeBtn.addActionListener(new LikeBtnListener());
-        updateBtn.addActionListener(new UpdateBtnListener());
+        renameBtn.addActionListener(new RenameBtnListener());
     }
 
     public void createGUI() {
-        frame = new JFrame("Wuliu Edit Meta");
+        frame = new JFrame("Wuliu Rename");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         var pane_1 = new JPanel();
@@ -99,18 +94,15 @@ public class WuliuEditMeta implements Runnable {
 
         readonlyIdTF = new JTextField("id");
         readonlyIdTF.setEditable(false);
-        readonlyFilenameTF = new JTextField("filename");
-        readonlyFilenameTF.setEditable(false);
-        readonlySizeTF = new JTextField("size");
-        readonlySizeTF.setEditable(false);
-        likeTF = new JTextField("like");
-        labelTF = new JTextField("label");
-        notesTF = new JTextField("notes");
-        ctimeTF = new JTextField("ctime");
-        utimeTF = new JTextField("utime");
+        filenameTF_2 = new JTextField("filename");
+        filenameTF_2.setEditable(false);
+        readonlyLabelTF = new JTextField("label");
+        readonlyLabelTF.setEditable(false);
+        readonlyNotesTF = new JTextField("notes");
+        readonlyNotesTF.setEditable(false);
         List<JTextField> textFields = List.of(
-                readonlyIdTF, readonlyFilenameTF, readonlySizeTF,
-                likeTF, labelTF, notesTF, ctimeTF, utimeTF
+                readonlyIdTF, filenameTF_2,
+                readonlyLabelTF, readonlyNotesTF
         );
         textFields.forEach(tf -> {
             tf.setFont(MyUtil.FONT_18);
@@ -118,10 +110,9 @@ public class WuliuEditMeta implements Runnable {
             pane_2.add(tf);
         });
 
-        likeBtn = new JButton("Like");
-        updateBtn = new JButton("Update");
-        pane_2.add(likeBtn);
-        pane_2.add(updateBtn);
+        renameBtn = new JButton("Rename");
+        pane_2.add(Box.createRigidArea(new Dimension(350, 10)));
+        pane_2.add(renameBtn);
 
         frame.add(BorderLayout.CENTER, pane_1);
         frame.add(BorderLayout.EAST, pane_2);
@@ -138,29 +129,13 @@ public class WuliuEditMeta implements Runnable {
                 heart.repeat(file.like), file.id, file.filename)).toList();
     }
 
-    private Integer getLike() {
-        var like = 0;
-        var likeStr = likeTF.getText();
-        if (likeStr.isBlank()) return 0;
-        try {
-            like = Integer.parseInt(likeStr);
-        } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(frame,
-                    "不允許輸入 [%s], 請輸入數字。".formatted(likeStr));
-            like = -1;
-        }
-        return like;
-    }
-
     private void fillTheForm(Simplemeta file) {
         readonlyIdTF.setText(file.id);
-        readonlyFilenameTF.setText(file.filename);
-        readonlySizeTF.setText(MyUtil.fileSizeToString(file.size));
-        likeTF.setText(file.like.toString());
-        labelTF.setText(file.label);
-        notesTF.setText(file.notes);
-        ctimeTF.setText(file.ctime);
-        utimeTF.setText(file.utime);
+        filenameTF_2.setText(file.filename);
+        readonlyLabelTF.setText(file.label);
+        readonlyNotesTF.setText(file.notes);
+        filenameTF_2.setEditable(true);
+        filenameTF_2.requestFocusInWindow();
     }
 
     private void resetPreviewArea(Simplemeta meta) {
@@ -170,7 +145,8 @@ public class WuliuEditMeta implements Runnable {
                 var image = MyUtil.getImageCropLimit(file, pictureSizeLimit);
                 previewArea.setIcon(new ImageIcon(image));
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                JOptionPane.showMessageDialog(frame, e.getMessage());
+                System.exit(1);
             }
         } else {
             previewArea.setIcon(new ImageIcon());
@@ -193,7 +169,7 @@ public class WuliuEditMeta implements Runnable {
     class SearchFilenameListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-            var filename = filenameTF.getText();
+            var filename = filenameTF.getText().strip();
             if (filename.isBlank()) {
                 files = db.getRecentMetaLimit(fileListLimit);
             } else {
@@ -222,20 +198,7 @@ public class WuliuEditMeta implements Runnable {
         }
     }
 
-    class LikeBtnListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            var like = getLike();
-            if (like < 0) {
-                likeTF.requestFocusInWindow();
-                return;
-            }
-            like++;
-            likeTF.setText(like.toString());
-        }
-    }
-
-    class UpdateBtnListener implements ActionListener {
+    class RenameBtnListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
             var fileID = readonlyIdTF.getText();
@@ -245,45 +208,83 @@ public class WuliuEditMeta implements Runnable {
             }
             var metaPart = new Simplemeta();
             metaPart.id = fileID;
-            var like = getLike();
-            if (like < 0) {
-                likeTF.requestFocusInWindow();
-                return;
-            }
-            metaPart.like = like;
-            metaPart.label = labelTF.getText();
-            metaPart.notes = notesTF.getText();
-            metaPart.ctime = ctimeTF.getText();
-            metaPart.utime = utimeTF.getText();
+            metaPart.filename = filenameTF_2.getText().strip();
             var result = db.getMetaByID(fileID);
             if (result.isEmpty()) {
                 JOptionPane.showMessageDialog(frame, "找不到ID: " + fileID);
                 return;
             }
-            var file = result.get();
-            var oldText = file.label+file.notes+file.ctime+file.utime;
-            var newText = metaPart.label+metaPart.notes+metaPart.ctime+metaPart.utime;
-            if (file.like.equals(metaPart.like) && oldText.equals(newText)) {
-                JOptionPane.showMessageDialog(frame, "無變化, 內容未更新。");
+            var oldMeta = result.get();
+            var err = checkFilename(oldMeta.filename, metaPart.filename);
+            if (err.isPresent()) {
+                JOptionPane.showMessageDialog(frame, err.get());
                 return;
             }
-            db.updateMetaPart(metaPart);
+            err = checkFiles(oldMeta.filename, metaPart.filename);
+            if (err.isPresent()) {
+                JOptionPane.showMessageDialog(frame, err.get());
+                return;
+            }
             try {
-                updateMetaFile(fileID);
+                renameFile(oldMeta.filename, metaPart.filename);
+                var meta = renameMeta(oldMeta.filename, metaPart.filename);
+                renameInDB(oldMeta.id, meta);
             } catch (IOException ex) {
-                throw new RuntimeException(ex);
+                JOptionPane.showMessageDialog(frame, ex.getMessage());
+                return;
             }
             JOptionPane.showMessageDialog(frame, "更新成功！");
             System.exit(0);
         }
 
-        private void updateMetaFile(String fileID) throws IOException {
-            var meta = db.getMetaByID(fileID).orElseThrow();
-            var metaPath = MyUtil.getSimplemetaPath(meta.filename);
-            var metaJson = JSON.std.with(JSON.Feature.PRETTY_PRINT_OUTPUT).asString(meta.toMap());
-            System.out.println("Update => " + metaPath);
-            Files.write(metaPath, metaJson.getBytes());
-            System.out.println(metaJson);
+        private Optional<String> checkFilename(String oldName, String newName) {
+            if (oldName.equals(newName)) return Optional.of("檔案名稱無變化。");
+            var pattern = Pattern.compile("[:*?<>|/\"\\\\]");
+            var matcher = pattern.matcher(newName);
+            if (matcher.find()) {
+                return Optional.of("檔案名稱不允許包含這些字符 \\/:*?\"<>|");
+            }
+            return Optional.empty();
+        }
+
+        private Optional<String> checkFiles(String oldName, String newName) {
+            var oldFile = MyUtil.FILES_PATH.resolve(oldName);
+            var newFile = MyUtil.FILES_PATH.resolve(newName);
+            var oldMeta = MyUtil.getSimplemetaPath(oldName);
+            var newMeta = MyUtil.getSimplemetaPath(newName);
+            if (Files.notExists(oldFile)) return Optional.of("Not Found: " + oldFile);
+            if (Files.exists(newFile)) return Optional.of("File Exists: " + newFile);
+            if (Files.notExists(oldMeta)) return Optional.of("Not Found: " + oldMeta);
+            if (Files.exists(newMeta)) return Optional.of("File Exists: " + newMeta);
+            return Optional.empty();
+        }
+
+        private void renameFile(String oldName, String newName) throws IOException {
+            var oldFile = MyUtil.FILES_PATH.resolve(oldName);
+            var newFile = MyUtil.FILES_PATH.resolve(newName);
+            System.out.printf("Rename %s => %s%n", oldFile, newFile);
+            Files.move(oldFile, newFile);
+        }
+
+        private Simplemeta renameMeta(String oldName, String newName) throws IOException {
+            var oldMetaPath = MyUtil.getSimplemetaPath(oldName);
+            var newMetaPath = MyUtil.getSimplemetaPath(newName);
+            System.out.printf("Rename %s => %s%n", oldMetaPath, newMetaPath);
+            var meta = new Simplemeta();
+            meta.readFromJsonFile(oldMetaPath);
+            meta.id = Simplemeta.nameToID(newName);
+            meta.filename = newName;
+            meta.type = Simplemeta.typeByFilename(newName);
+            MyUtil.writeJsonToFilePretty(meta.toMap(), newMetaPath.toFile());
+            Files.delete(oldMetaPath);
+            return meta;
+        }
+
+        private void renameInDB(String oldID, Simplemeta meta) {
+            System.out.println("Update database...");
+            // 要先刪除, 否則 checksum 衝突。
+            db.deleteSimplemeta(oldID);
+            db.insertSimplemeta(meta);
         }
     }
 }

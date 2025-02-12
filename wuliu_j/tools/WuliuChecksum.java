@@ -55,7 +55,6 @@ public class WuliuChecksum implements Runnable {
     @Override
     public void run() {
         createGUI();
-        orphans = new MyOrphans(projRoot, msgArea);
         projList.setListData(projInfo.projects.toArray(new String[0]));
         projList.addMouseListener(new DoubleClickAdapter());
         renewBtn.addActionListener(new RenewBtnListener());
@@ -185,6 +184,7 @@ public class WuliuChecksum implements Runnable {
             if (event.getClickCount() == 2) {
                 int i = projList.locationToIndex(event.getPoint());
                 projRoot = Path.of(projInfo.projects.get(i));
+                orphans = new MyOrphans(projRoot, msgArea);
                 db = new DB(projRoot.resolve(MyUtil.WULIU_J_DB).toString());
                 currentProjTF.setText(projRoot.toAbsolutePath().normalize().toString());
                 printInfo(true);
@@ -327,8 +327,8 @@ class MyOrphans {
 
     MyOrphans(Path root, JTextArea textArea) {
         this.textArea = textArea;
-        filesFolder = root.resolve("files");
-        metaFolder = root.resolve("simplemeta");
+        filesFolder = root.resolve("files").toAbsolutePath().normalize();
+        metaFolder = root.resolve("simplemeta").toAbsolutePath().normalize();
     }
 
     /**

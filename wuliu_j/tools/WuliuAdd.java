@@ -158,7 +158,7 @@ public class WuliuAdd implements Runnable{
 
         frame.add(BorderLayout.CENTER, pane_1);
         frame.add(BorderLayout.EAST, pane_2);
-        frame.setSize(700, 500);
+        frame.setSize(700, 550);
         frame.setLocationRelativeTo(null); // 窗口居中
         frame.setVisible(true);
 
