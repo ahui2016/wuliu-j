@@ -57,6 +57,9 @@ public class WuliuEditMeta implements Runnable {
         idFileList.addMouseListener(new DoubleClickAdapter());
         likeBtn.addActionListener(new LikeBtnListener());
         updateBtn.addActionListener(new UpdateBtnListener());
+
+        searchFilename();
+        filenameTF.requestFocusInWindow();
     }
 
     public void createGUI() {
@@ -128,8 +131,6 @@ public class WuliuEditMeta implements Runnable {
         frame.setSize(850, 600);
         frame.setLocationRelativeTo(null); // 窗口居中
         frame.setVisible(true);
-
-        filenameTF.requestFocusInWindow();
     }
 
     private List<String> metaToStringList(List<Simplemeta> metaList) {
@@ -177,6 +178,17 @@ public class WuliuEditMeta implements Runnable {
         }
     }
 
+    private void searchFilename() {
+        var filename = filenameTF.getText();
+        if (filename.isBlank()) {
+            files = db.getRecentMetaLimit(fileListLimit);
+        } else {
+            files = db.searchFilenameLimit(filename, fileListLimit);
+        }
+        var idFilenames = metaToStringList(files);
+        idFileList.setListData(idFilenames.toArray(new String[0]));
+    }
+
     class DoubleClickAdapter extends MouseAdapter {
         @Override
         public void mouseClicked(MouseEvent event) {
@@ -193,14 +205,7 @@ public class WuliuEditMeta implements Runnable {
     class SearchFilenameListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-            var filename = filenameTF.getText();
-            if (filename.isBlank()) {
-                files = db.getRecentMetaLimit(fileListLimit);
-            } else {
-                files = db.getByFilenameLimit(filename, fileListLimit);
-            }
-            var idFilenames = metaToStringList(files);
-            idFileList.setListData(idFilenames.toArray(new String[0]));
+            searchFilename();
         }
     }
 

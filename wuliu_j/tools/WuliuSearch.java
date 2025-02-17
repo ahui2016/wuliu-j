@@ -45,6 +45,7 @@ public class WuliuSearch implements Runnable{
     public void run() {
         createGUI();
         loadRecentFiles();
+        searchTF.requestFocusInWindow();
     }
 
     public void createGUI() {
@@ -65,10 +66,9 @@ public class WuliuSearch implements Runnable{
         var pane_boxes = new JPanel();
         pane_boxes.setLayout(new BoxLayout(pane_boxes, BoxLayout.PAGE_AXIS));
         cBoxFilename = new JCheckBox("filename");
+        cBoxFilename.setSelected(true);
         cBoxLabel = new JCheckBox("label");
-        cBoxLabel.setSelected(true);
         cBoxNotes = new JCheckBox("notes");
-        cBoxNotes.setSelected(true);
 
         List.of( cBoxFilename, cBoxLabel, cBoxNotes).forEach(item -> {
             item.setFont(MyUtil.FONT_18);
@@ -87,6 +87,7 @@ public class WuliuSearch implements Runnable{
             btnGroup.add(rBtn);
             pane_radio.add(rBtn);
             if (name.equals("utime")) rBtn.setSelected(true);
+            if (name.equals("ctime")) rBtn.setEnabled(false);
         });
         pane_1.add(pane_radio);
 
@@ -97,6 +98,7 @@ public class WuliuSearch implements Runnable{
         resultLimitTF.setText(DEFAULT_RESULT_LIMIT.toString());
         pane_1.add(new JLabel("date prefix"));
         pane_1.add(datePrefixTF);
+        datePrefixTF.setEditable(false);
         pane_1.add(new JLabel("result limit"));
         pane_1.add(resultLimitTF);
 
@@ -130,8 +132,6 @@ public class WuliuSearch implements Runnable{
         frame.setSize(900, RESULT_LIST_HEIGHT+120);
         frame.setLocationRelativeTo(null); // 窗口居中
         frame.setVisible(true);
-
-        searchTF.requestFocusInWindow();
     }
 
     private void loadRecentFiles() {
@@ -156,8 +156,70 @@ public class WuliuSearch implements Runnable{
         resultList.setListData(metaToStringArray(result));
     }
 
-    private void searchLikeLimit() {
-        var limit = Integer.parseInt(resultLimitTF.getText());
+    private void searchFilenameLabelNotes(int limit) {
+        var str = searchTF.getText().strip();
+        if (str.isBlank()) {
+            loadRecentFiles();
+            return;
+        }
+        var filenameChecked = cBoxFilename.isSelected() ? 1 : 0;
+        var labelChecked = cBoxLabel.isSelected() ? 1 : 0;
+        var notesChecked = cBoxNotes.isSelected() ? 1 : 0;
+        if (filenameChecked+labelChecked+notesChecked == 0) {
+            filenameChecked = 1;
+            cBoxFilename.setSelected(true);
+        }
+        if (filenameChecked == 1 && labelChecked+notesChecked == 0) {
+            searchFilenameLimit(str, limit);
+            return;
+        }
+        if (labelChecked == 1 && filenameChecked+notesChecked == 0) {
+            searchLabelLimit(str, limit);
+            return;
+        }
+        if (notesChecked == 1 && filenameChecked+labelChecked == 0) {
+            searchNotesLimit(str, limit);
+            return;
+        }
+        cBoxFilename.setSelected(true);
+        cBoxLabel.setSelected(true);
+        cBoxNotes.setSelected(true);
+        result = db.searchFilenameLabelNotesLimit(str, limit);
+        if (result.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "找不到filename/label/notes包含: " + str);
+            return;
+        }
+        resultList.setListData(metaToStringArray(result));
+    }
+
+    private void searchFilenameLimit(String str, int limit) {
+        result = db.searchFilenameLimit(str, limit);
+        if (result.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "找不到filename包含: " + str);
+            return;
+        }
+        resultList.setListData(metaToStringArray(result));
+    }
+
+    private void searchLabelLimit(String str, int limit) {
+        result = db.searchLabelLimit(str, limit);
+        if (result.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "找不到label包含: " + str);
+            return;
+        }
+        resultList.setListData(metaToStringArray(result));
+    }
+
+    private void searchNotesLimit(String str, int limit) {
+        result = db.searchNotesLimit(str, limit);
+        if (result.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "找不到notes包含: " + str);
+            return;
+        }
+        resultList.setListData(metaToStringArray(result));
+    }
+
+    private void searchLikeLimit(int limit) {
         result = db.getLikeLimit(limit);
         if (result.isEmpty()) {
             JOptionPane.showMessageDialog(frame, "找不到like大於零的檔案");
@@ -171,8 +233,7 @@ public class WuliuSearch implements Runnable{
         resultList.setListData(listData);
     }
 
-    private void searchSizeLimit() {
-        var limit = Integer.parseInt(resultLimitTF.getText());
+    private void searchSizeLimit(int limit) {
         result = db.getOrderBySize(limit);
         if (result.isEmpty()) {
             JOptionPane.showMessageDialog(frame, "找不到檔案");
@@ -197,12 +258,13 @@ public class WuliuSearch implements Runnable{
         }
 
         private void run() {
+            var limit = Integer.parseInt(resultLimitTF.getText().strip());
             var radioSelection = btnGroup.getSelection().getActionCommand();
             switch (radioSelection) {
                 case "id" -> searchByID();
-                case "like" -> searchLikeLimit();
-                case "size" -> searchSizeLimit();
-                default -> loadRecentFiles();
+                case "like" -> searchLikeLimit(limit);
+                case "size" -> searchSizeLimit(limit);
+                default -> searchFilenameLabelNotes(limit);
             }
             resultList.setEnabled(true);
             searchBtn.setEnabled(true);

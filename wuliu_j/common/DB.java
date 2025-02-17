@@ -65,10 +65,42 @@ public class DB {
                       .list());
     }
 
-    public List<Simplemeta> getByFilenameLimit(String filename, int limit) {
+    public List<Simplemeta> searchFilenameLimit(String filename, int limit) {
         var result = jdbi.withHandle(handle ->
-                handle.select(Stmt.GET_BY_FILENAME_LIMIT)
+                handle.select(Stmt.SEARCH_FILENAME_LIMIT)
                         .bind("filename", "%"+filename+"%")
+                        .bind("limit", limit)
+                        .mapToMap()
+                        .list());
+        return result.stream().map(Simplemeta::ofMap).toList();
+    }
+
+    public List<Simplemeta> searchLabelLimit(String label, int limit) {
+        var result = jdbi.withHandle(handle ->
+                handle.select(Stmt.SEARCH_LABEL_LIMIT)
+                        .bind("label", "%"+label+"%")
+                        .bind("limit", limit)
+                        .mapToMap()
+                        .list());
+        return result.stream().map(Simplemeta::ofMap).toList();
+    }
+
+    public List<Simplemeta> searchNotesLimit(String notes, int limit) {
+        var result = jdbi.withHandle(handle ->
+                handle.select(Stmt.SEARCH_NOTES_LIMIT)
+                        .bind("notes", "%"+notes+"%")
+                        .bind("limit", limit)
+                        .mapToMap()
+                        .list());
+        return result.stream().map(Simplemeta::ofMap).toList();
+    }
+
+    public List<Simplemeta> searchFilenameLabelNotesLimit(String str, int limit) {
+        var result = jdbi.withHandle(handle ->
+                handle.select(Stmt.SEARCH_FILENAME_LABEL_NOTES_LIMIT)
+                        .bind("filename", "%"+str+"%")
+                        .bind("label", "%"+str+"%")
+                        .bind("notes", "%"+str+"%")
                         .bind("limit", limit)
                         .mapToMap()
                         .list());

@@ -173,7 +173,7 @@ public class WuliuRename implements Runnable {
             if (filename.isBlank()) {
                 files = db.getRecentMetaLimit(fileListLimit);
             } else {
-                files = db.getByFilenameLimit(filename, fileListLimit);
+                files = db.searchFilenameLimit(filename, fileListLimit);
             }
             var idFilenames = metaToStringList(files);
             idFileList.setListData(idFilenames.toArray(new String[0]));

@@ -85,9 +85,25 @@ public class Stmt {
         SELECT * FROM simplemeta WHERE id=:id;
         """;
 
-    public static final String GET_BY_FILENAME_LIMIT = """
+    public static final String SEARCH_FILENAME_LIMIT = """
         SELECT * FROM simplemeta WHERE filename LIKE :filename
-        LIMIT :limit;
+        ORDER BY utime DESC LIMIT :limit;
+        """;
+
+    public static final String SEARCH_LABEL_LIMIT = """
+        SELECT * FROM simplemeta WHERE label LIKE :label
+        ORDER BY utime DESC LIMIT :limit;
+        """;
+
+    public static final String SEARCH_NOTES_LIMIT = """
+        SELECT * FROM simplemeta WHERE notes LIKE :notes
+        ORDER BY utime DESC LIMIT :limit;
+        """;
+
+    public static final String SEARCH_FILENAME_LABEL_NOTES_LIMIT = """
+        SELECT * FROM simplemeta
+        WHERE filename LIKE :filename OR label LIKE :label OR notes LIKE :notes
+        ORDER BY utime DESC LIMIT :limit;
         """;
 
     public static final String GET_LIKE_LIMIT = """
