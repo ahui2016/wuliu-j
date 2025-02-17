@@ -16,6 +16,18 @@ Java version of Wuliu File Manager
 - 其中 label 和 notes 合併為 notes, 而 keywords/collections/albums 則合併為 label.
 - checksum 從 SHA-512 改為 SHA-1, 而且 type 也有改變。
 
+## WuliuSearch
+
+- 只要勾選了 `id`, 則只尋找 id
+- 只要勾選了 `like`, 則只列出 like 大於零的檔案
+  - 此時 `result limit` 有效，其他設定無效
+- 只要勾選了 `size`, 則按照從大到小的順序列出檔案
+  - 此時 `result limit` 有效，其他設定無效
+- 如果勾選了 `utime`, 那麼搜尋結果按 utime 排序
+  - 此時 `date prefix` 是指 utime 的前綴
+- 如果勾選了 `ctime`, 那麼搜尋結果按 ctime 排序
+  - 此時 `date prefix` 是指 ctime 的前綴
+
 **特別注意**:  
 執行 MetaToSimple 之前, 請先執行 `wuliu-checksum` 進行檢查,
 因為執行 MetaToSimple 會更改摘要算法。

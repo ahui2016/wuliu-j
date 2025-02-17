@@ -75,6 +75,24 @@ public class DB {
         return result.stream().map(Simplemeta::ofMap).toList();
     }
 
+    public List<Simplemeta> getLikeLimit(int limit) {
+        var result = jdbi.withHandle(handle ->
+                handle.select(Stmt.GET_LIKE_LIMIT)
+                        .bind("limit", limit)
+                        .mapToMap()
+                        .list());
+        return result.stream().map(Simplemeta::ofMap).toList();
+    }
+
+    public List<Simplemeta> getOrderBySize(int limit) {
+        var result = jdbi.withHandle(handle ->
+                handle.select(Stmt.GET_ORDER_BY_SIZE)
+                        .bind("limit", limit)
+                        .mapToMap()
+                        .list());
+        return result.stream().map(Simplemeta::ofMap).toList();
+    }
+
     public List<Simplemeta> getRecentMetaLimit(int limit) {
         var result = jdbi.withHandle(handle ->
                 handle.select(Stmt.GET_RECENT_META_LIMIT)

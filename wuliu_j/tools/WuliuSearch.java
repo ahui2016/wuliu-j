@@ -6,6 +6,8 @@ import wuliu_j.common.Simplemeta;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.List;
 
@@ -15,11 +17,10 @@ public class WuliuSearch implements Runnable{
     private static final Integer DEFAULT_RESULT_LIMIT = 23;
 
     private JFrame frame;
-    private JCheckBox cBoxID;
     private JCheckBox cBoxFilename;
     private JCheckBox cBoxLabel;
     private JCheckBox cBoxNotes;
-    private List<String> radioButtons = List.of("like", "size", "ctime", "utime");
+    private List<String> radioButtons = List.of("id", "like", "size", "ctime", "utime");
     private ButtonGroup btnGroup = new ButtonGroup();
     private JTextField datePrefixTF;
     private JTextField resultLimitTF;
@@ -43,7 +44,7 @@ public class WuliuSearch implements Runnable{
     @Override
     public void run() {
         createGUI();
-        loadRecentFiles(DEFAULT_RESULT_LIMIT);
+        loadRecentFiles();
     }
 
     public void createGUI() {
@@ -63,14 +64,13 @@ public class WuliuSearch implements Runnable{
         // pane_1
         var pane_boxes = new JPanel();
         pane_boxes.setLayout(new BoxLayout(pane_boxes, BoxLayout.PAGE_AXIS));
-        cBoxID = new JCheckBox("id");
         cBoxFilename = new JCheckBox("filename");
         cBoxLabel = new JCheckBox("label");
         cBoxLabel.setSelected(true);
         cBoxNotes = new JCheckBox("notes");
         cBoxNotes.setSelected(true);
 
-        List.of(cBoxID, cBoxFilename, cBoxLabel, cBoxNotes).forEach(item -> {
+        List.of( cBoxFilename, cBoxLabel, cBoxNotes).forEach(item -> {
             item.setFont(MyUtil.FONT_18);
             pane_boxes.add(item);
         });
@@ -103,11 +103,7 @@ public class WuliuSearch implements Runnable{
         // pane_2
         searchTF = newTextField18(22);
         searchBtn = new JButton("search");
-        searchBtn.addActionListener(e -> {
-            var limitStr = resultLimitTF.getText();
-            var limit = Integer.parseInt(limitStr);
-            loadRecentFiles(limit);
-        });
+        searchBtn.addActionListener(new SearchBtnListener());
         pane_2.add(searchTF);
         pane_2.add(searchBtn);
 
@@ -134,18 +130,93 @@ public class WuliuSearch implements Runnable{
         frame.setSize(900, RESULT_LIST_HEIGHT+120);
         frame.setLocationRelativeTo(null); // 窗口居中
         frame.setVisible(true);
+
+        searchTF.requestFocusInWindow();
     }
 
-    private void loadRecentFiles(int limit) {
+    private void loadRecentFiles() {
+        var limit = Integer.parseInt(resultLimitTF.getText());
         result = db.getRecentMetaLimit(limit);
-        var idFilenames = metaToStringList(result);
-        resultList.setListData(idFilenames.toArray(new String[0]));
+        resultList.setListData(metaToStringArray(result));
     }
 
-    private List<String> metaToStringList(List<Simplemeta> metaList) {
+    private void searchByID() {
+        var fileID = searchTF.getText().strip();
+        if (fileID.isBlank()) {
+            JOptionPane.showMessageDialog(frame, "請輸入檔案ID");
+            return;
+        }
+        var resultOpt = db.getMetaByID(fileID);
+        if (resultOpt.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "找不到ID: " + fileID);
+            return;
+        }
+        var file = resultOpt.get();
+        result = List.of(file);
+        resultList.setListData(metaToStringArray(result));
+    }
+
+    private void searchLikeLimit() {
+        var limit = Integer.parseInt(resultLimitTF.getText());
+        result = db.getLikeLimit(limit);
+        if (result.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "找不到like大於零的檔案");
+            return;
+        }
         var heart = "❤️";
-        return metaList.stream().map(file -> "%s[%s] %s".formatted(
-                heart.repeat(file.like), file.id, file.filename)).toList();
+        var listData = result.stream()
+                .map(file -> "%s %s".formatted(
+                        heart.repeat(file.like), file.filename))
+                .toArray(String[]::new);
+        resultList.setListData(listData);
+    }
+
+    private void searchSizeLimit() {
+        var limit = Integer.parseInt(resultLimitTF.getText());
+        result = db.getOrderBySize(limit);
+        if (result.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "找不到檔案");
+            return;
+        }
+        var listData = result.stream()
+                .map(file -> "(%s) %s".formatted(
+                        MyUtil.fileSizeToString(file.size), file.filename))
+                .toArray(String[]::new);
+        resultList.setListData(listData);
+    }
+
+    class SearchBtnListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            resultList.setEnabled(false);
+            searchTF.setEditable(false);
+            searchBtn.setEnabled(false);
+            var timer = new javax.swing.Timer(1000, _ -> run());
+            timer.setRepeats(false);
+            timer.start();
+        }
+
+        private void run() {
+            var radioSelection = btnGroup.getSelection().getActionCommand();
+            switch (radioSelection) {
+                case "id" -> searchByID();
+                case "like" -> searchLikeLimit();
+                case "size" -> searchSizeLimit();
+                default -> loadRecentFiles();
+            }
+            resultList.setEnabled(true);
+            searchBtn.setEnabled(true);
+            searchTF.setEditable(true);
+            searchTF.requestFocusInWindow();
+        }
+    }
+
+    private String[] metaToStringArray(List<Simplemeta> metaList) {
+        var heart = "❤️";
+        return metaList.stream()
+                .map(file -> "%s[%s] %s".formatted(
+                        heart.repeat(file.like), file.id, file.filename))
+                .toArray(String[]::new);
     }
 
     private JSeparator newSeparator(int width) {

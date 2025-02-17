@@ -90,6 +90,15 @@ public class Stmt {
         LIMIT :limit;
         """;
 
+    public static final String GET_LIKE_LIMIT = """
+        SELECT * FROM simplemeta WHERE like > 0
+        ORDER BY like DESC LIMIT :limit;
+        """;
+
+    public static final String GET_ORDER_BY_SIZE = """
+        SELECT * FROM simplemeta ORDER BY size DESC LIMIT :limit;
+        """;
+
     public static final String GET_RECENT_META_LIMIT = """
         SELECT * FROM simplemeta ORDER BY utime DESC
         LIMIT :limit;
