@@ -8,20 +8,30 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.regex.Pattern;
 
 public class WuliuSearch implements Runnable{
     private static DB db;
+    private static final String HEART = "❤️";
     private static final int RESULT_LIST_HEIGHT = 550;
     private static final Integer DEFAULT_RESULT_LIMIT = 23;
+    private static final int PIC_SIZE = 250;
 
     private JFrame frame;
     private JCheckBox cBoxFilename;
     private JCheckBox cBoxLabel;
     private JCheckBox cBoxNotes;
-    private List<String> radioButtons = List.of("id", "like", "size", "ctime", "utime");
-    private ButtonGroup btnGroup = new ButtonGroup();
+    private final List<String> radioButtons = List.of(
+            "id", "like", "size", "ctime", "utime");
+    private final ButtonGroup btnGroup = new ButtonGroup();
     private JTextField datePrefixTF;
     private JTextField resultLimitTF;
     private JTextField searchTF;
@@ -29,6 +39,15 @@ public class WuliuSearch implements Runnable{
 
     private List<Simplemeta> result;
     private JList<String> resultList;
+
+    private JLabel previewArea;
+    private final List<String> fileFields = List.of(
+            "id", "filename", "size", "like",
+            "label", "notes", "ctime", "utime");
+    private final Map<String, JTextField> fileFormFields = new HashMap<>();
+    private JButton renameBtn;
+    private JButton exportBtn;
+    private JButton deleteBtn;
 
     public static void main(String[] args) throws IOException {
         initAndCheck();
@@ -44,6 +63,8 @@ public class WuliuSearch implements Runnable{
     @Override
     public void run() {
         createGUI();
+        resultList.addMouseListener(new DoubleClickAdapter());
+        renameBtn.addActionListener(new RenameBtnListener());
         loadRecentFiles();
         searchTF.requestFocusInWindow();
     }
@@ -52,13 +73,17 @@ public class WuliuSearch implements Runnable{
         frame = new JFrame("Wuliu Search");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+        UIManager.put("OptionPane.messageFont", MyUtil.FONT_18);
+        UIManager.put("TextField.font", MyUtil.FONT_18);
+
         var pane_1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
         var pane_r = new JPanel();
         pane_r.setLayout(new BoxLayout(pane_r, BoxLayout.LINE_AXIS));
+        var pane_2 = new JPanel();
+        var pane_3 = new JPanel();
         pane_r.setPreferredSize(new Dimension(750, RESULT_LIST_HEIGHT+70));
-        var pane_2 = new JPanel(new FlowLayout(FlowLayout.LEFT));
         pane_2.setPreferredSize(new Dimension(420, RESULT_LIST_HEIGHT+70));
-        var pane_3 = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        pane_3.setPreferredSize(new Dimension(320, RESULT_LIST_HEIGHT+70));
         pane_r.add(pane_2);
         pane_r.add(pane_3);
 
@@ -93,17 +118,21 @@ public class WuliuSearch implements Runnable{
 
         pane_1.add(newSeparator(90));
 
-        datePrefixTF = newTextField18(5);
-        resultLimitTF = newTextField18(5);
+        datePrefixTF = new JTextField(5);
+        resultLimitTF = new JTextField(5);
         resultLimitTF.setText(DEFAULT_RESULT_LIMIT.toString());
-        pane_1.add(new JLabel("date prefix"));
+        var dateLabel = new JLabel("date prefix");
+        dateLabel.setFont(MyUtil.FONT_18);
+        pane_1.add(dateLabel);
         pane_1.add(datePrefixTF);
         datePrefixTF.setEditable(false);
-        pane_1.add(new JLabel("result limit"));
+        var limitLabel = new JLabel("result limit");
+        limitLabel.setFont(MyUtil.FONT_18);
+        pane_1.add(limitLabel);
         pane_1.add(resultLimitTF);
 
         // pane_2
-        searchTF = newTextField18(22);
+        searchTF = new JTextField(22);
         searchBtn = new JButton("search");
         searchBtn.addActionListener(new SearchBtnListener());
         pane_2.add(searchTF);
@@ -120,8 +149,27 @@ public class WuliuSearch implements Runnable{
         pane_2.add(scrollPane);
 
         // pane_3
-        var tempTF = newTextField18(20);
-        pane_3.add(tempTF);
+        previewArea = new JLabel();
+        previewArea.setPreferredSize(new Dimension(PIC_SIZE, PIC_SIZE));
+        // previewArea.setVisible(false);
+        pane_3.add(previewArea);
+
+        fileFields.forEach(name -> {
+            var field = new JTextField(name);
+            field.setEditable(false);
+            // field.setFont(MyUtil.FONT_18);
+            field.setColumns(18);
+            pane_3.add(field);
+            fileFormFields.put(name, field);
+        });
+
+        pane_3.add(Box.createRigidArea(new Dimension(350, 10)));
+        renameBtn = new JButton("Rename");
+        exportBtn = new JButton("Export");
+        deleteBtn = new JButton("Delete");
+        pane_3.add(renameBtn);
+        pane_3.add(exportBtn);
+        pane_3.add(deleteBtn);
 
         // add panels to the frame
         var pane_top = new JPanel();
@@ -132,6 +180,26 @@ public class WuliuSearch implements Runnable{
         frame.setSize(900, RESULT_LIST_HEIGHT+120);
         frame.setLocationRelativeTo(null); // 窗口居中
         frame.setVisible(true);
+    }
+
+    private void fillFileForm(Simplemeta file) {
+        var meta = file.toMap();
+        fileFields.forEach(name -> {
+            var obj = meta.get(name);
+            var text = switch (name) {
+                case "size" -> MyUtil.fileSizeToString((Long) obj);
+                case "like" -> HEART.repeat((int) obj);
+                default -> (String) obj;
+            };
+            var field = fileFormFields.get(name);
+            field.setText(text);
+        });
+    }
+
+    private void resetFileForm() {
+        resultList.setListData(new String[0]);
+        previewArea.setIcon(new ImageIcon());
+        fileFields.forEach(name -> fileFormFields.get(name).setText(name));
     }
 
     private void loadRecentFiles() {
@@ -225,10 +293,9 @@ public class WuliuSearch implements Runnable{
             JOptionPane.showMessageDialog(frame, "找不到like大於零的檔案");
             return;
         }
-        var heart = "❤️";
         var listData = result.stream()
                 .map(file -> "%s %s".formatted(
-                        heart.repeat(file.like), file.filename))
+                        HEART.repeat(file.like), file.filename))
                 .toArray(String[]::new);
         resultList.setListData(listData);
     }
@@ -273,6 +340,129 @@ public class WuliuSearch implements Runnable{
         }
     }
 
+    class DoubleClickAdapter extends MouseAdapter {
+        @Override
+        public void mouseClicked(MouseEvent event) {
+            if (event.getClickCount() == 2) {
+                int i = resultList.locationToIndex(event.getPoint());
+                var file = result.get(i);
+                fillFileForm(file);
+                resetPreviewArea(file);
+            }
+        }
+    }
+
+    private void resetPreviewArea(Simplemeta meta) {
+        if (meta.isImage()) {
+            try {
+                var file = MyUtil.FILES_PATH.resolve(meta.filename).toFile();
+                var image = MyUtil.getImageCropLimit(file, PIC_SIZE);
+                previewArea.setIcon(new ImageIcon(image));
+            } catch (IOException e) {
+                // throw new RuntimeException(e);
+                JOptionPane.showMessageDialog(frame, e.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+            }
+        } else {
+            previewArea.setIcon(new ImageIcon());
+        }
+    }
+
+    class RenameBtnListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            var fileID = fileFormFields.get("id").getText();
+            if (fileID.isBlank() || fileID.equals("id")) {
+                JOptionPane.showMessageDialog(frame, "請先選擇檔案");
+                return;
+            }
+            var result = db.getMetaByID(fileID);
+            if (result.isEmpty()) {
+                JOptionPane.showMessageDialog(frame, "找不到ID: " + fileID);
+                return;
+            }
+
+            var oldName = fileFormFields.get("filename").getText();
+            var newName = JOptionPane.showInputDialog("new filename:", oldName);
+            if (newName == null) return;
+            newName = newName.strip();
+            if (newName.isBlank() || newName.equals(oldName)) {
+                return;
+            }
+
+            var oldMeta = result.get();
+            var err = checkFilename(newName);
+            if (err.isPresent()) {
+                JOptionPane.showMessageDialog(frame, err.get());
+                return;
+            }
+            err = checkFiles(oldMeta.filename, newName);
+            if (err.isPresent()) {
+                JOptionPane.showMessageDialog(frame, err.get());
+                return;
+            }
+            try {
+                renameFile(oldMeta.filename, newName);
+                var meta = renameMeta(oldMeta.filename, newName);
+                renameInDB(oldMeta.id, meta);
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(frame, ex.getMessage());
+                return;
+            }
+            JOptionPane.showMessageDialog(frame, "更新成功！");
+
+            resetFileForm();
+        }
+
+        private Optional<String> checkFilename(String filename) {
+            var pattern = Pattern.compile("[:*?<>|/\"\\\\]");
+            var matcher = pattern.matcher(filename);
+            if (matcher.find()) {
+                return Optional.of("檔案名稱不允許包含這些字符 \\/:*?\"<>|");
+            }
+            return Optional.empty();
+        }
+
+        private Optional<String> checkFiles(String oldName, String newName) {
+            var oldFile = MyUtil.FILES_PATH.resolve(oldName);
+            var newFile = MyUtil.FILES_PATH.resolve(newName);
+            var oldMeta = MyUtil.getSimplemetaPath(oldName);
+            var newMeta = MyUtil.getSimplemetaPath(newName);
+            if (Files.notExists(oldFile)) return Optional.of("Not Found: " + oldFile);
+            if (Files.exists(newFile)) return Optional.of("File Exists: " + newFile);
+            if (Files.notExists(oldMeta)) return Optional.of("Not Found: " + oldMeta);
+            if (Files.exists(newMeta)) return Optional.of("File Exists: " + newMeta);
+            return Optional.empty();
+        }
+
+        private void renameFile(String oldName, String newName) throws IOException {
+            var oldFile = MyUtil.FILES_PATH.resolve(oldName);
+            var newFile = MyUtil.FILES_PATH.resolve(newName);
+            System.out.printf("Rename %s => %s%n", oldFile, newFile);
+            Files.move(oldFile, newFile);
+        }
+
+        private Simplemeta renameMeta(String oldName, String newName) throws IOException {
+            var oldMetaPath = MyUtil.getSimplemetaPath(oldName);
+            var newMetaPath = MyUtil.getSimplemetaPath(newName);
+            System.out.printf("Rename %s => %s%n", oldMetaPath, newMetaPath);
+            var meta = new Simplemeta();
+            meta.readFromJsonFile(oldMetaPath);
+            meta.id = Simplemeta.nameToID(newName);
+            meta.filename = newName;
+            meta.type = Simplemeta.typeByFilename(newName);
+            MyUtil.writeJsonToFilePretty(meta.toMap(), newMetaPath.toFile());
+            Files.delete(oldMetaPath);
+            return meta;
+        }
+
+        private void renameInDB(String oldID, Simplemeta meta) {
+            System.out.println("Update database...");
+            // 要先刪除, 否則 checksum 衝突。
+            db.deleteSimplemeta(oldID);
+            db.insertSimplemeta(meta);
+        }
+    }
+
     private String[] metaToStringArray(List<Simplemeta> metaList) {
         var heart = "❤️";
         return metaList.stream()
@@ -287,9 +477,11 @@ public class WuliuSearch implements Runnable{
         return sep;
     }
 
+/*
     private JTextField newTextField18(int columns) {
         var tf = new JTextField(columns);
         tf.setFont(MyUtil.FONT_18);
         return tf;
     }
+*/
 }
