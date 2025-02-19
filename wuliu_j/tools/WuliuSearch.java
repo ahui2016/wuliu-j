@@ -2,6 +2,7 @@ package wuliu_j.tools;
 
 import wuliu_j.common.DB;
 import wuliu_j.common.MyUtil;
+import wuliu_j.common.ProjectInfo;
 import wuliu_j.common.Simplemeta;
 
 import javax.swing.*;
@@ -20,10 +21,12 @@ import java.util.regex.Pattern;
 
 public class WuliuSearch implements Runnable{
     private static DB db;
+    private static ProjectInfo projInfo;
     private static final String HEART = "❤️";
     private static final int RESULT_LIST_HEIGHT = 550;
     private static final Integer DEFAULT_RESULT_LIMIT = 23;
     private static final int PIC_SIZE = 250;
+    private static final int MB = MyUtil.MB;
 
     private JFrame frame;
     private JCheckBox cBoxFilename;
@@ -55,7 +58,7 @@ public class WuliuSearch implements Runnable{
     }
 
     static void initAndCheck() throws IOException {
-        var projInfo = MyUtil.initCheck();
+        projInfo = MyUtil.initCheck();
         MyUtil.checkNotBackup(projInfo);
         db = new DB(MyUtil.WULIU_J_DB);
     }
@@ -65,6 +68,7 @@ public class WuliuSearch implements Runnable{
         createGUI();
         resultList.addMouseListener(new DoubleClickAdapter());
         renameBtn.addActionListener(new RenameBtnListener());
+        exportBtn.addActionListener(new ExportBtnListener());
         loadRecentFiles();
         searchTF.requestFocusInWindow();
     }
@@ -73,8 +77,9 @@ public class WuliuSearch implements Runnable{
         frame = new JFrame("Wuliu Search");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        UIManager.put("OptionPane.messageFont", MyUtil.FONT_18);
-        UIManager.put("TextField.font", MyUtil.FONT_18);
+        List.of("OptionPane.messageFont", "TextField.font", "ComboBox.font",
+                "CheckBox.font", "RadioButton.font", "Label.font"
+        ).forEach(k -> UIManager.put(k, MyUtil.FONT_18));
 
         var pane_1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
         var pane_r = new JPanel();
@@ -95,10 +100,7 @@ public class WuliuSearch implements Runnable{
         cBoxLabel = new JCheckBox("label");
         cBoxNotes = new JCheckBox("notes");
 
-        List.of( cBoxFilename, cBoxLabel, cBoxNotes).forEach(item -> {
-            item.setFont(MyUtil.FONT_18);
-            pane_boxes.add(item);
-        });
+        List.of( cBoxFilename, cBoxLabel, cBoxNotes).forEach(pane_boxes::add);
         pane_1.add(pane_boxes);
 
         pane_1.add(newSeparator(90));
@@ -108,7 +110,7 @@ public class WuliuSearch implements Runnable{
         radioButtons.forEach(name -> {
             var rBtn = new JRadioButton(name);
             rBtn.setActionCommand(name);
-            rBtn.setFont(MyUtil.FONT_18);
+            // rBtn.setFont(MyUtil.FONT_18);
             btnGroup.add(rBtn);
             pane_radio.add(rBtn);
             if (name.equals("utime")) rBtn.setSelected(true);
@@ -121,14 +123,10 @@ public class WuliuSearch implements Runnable{
         datePrefixTF = new JTextField(5);
         resultLimitTF = new JTextField(5);
         resultLimitTF.setText(DEFAULT_RESULT_LIMIT.toString());
-        var dateLabel = new JLabel("date prefix");
-        dateLabel.setFont(MyUtil.FONT_18);
-        pane_1.add(dateLabel);
+        pane_1.add(new JLabel("date prefix"));
         pane_1.add(datePrefixTF);
         datePrefixTF.setEditable(false);
-        var limitLabel = new JLabel("result limit");
-        limitLabel.setFont(MyUtil.FONT_18);
-        pane_1.add(limitLabel);
+        pane_1.add(new JLabel("result limit"));
         pane_1.add(resultLimitTF);
 
         // pane_2
@@ -187,7 +185,7 @@ public class WuliuSearch implements Runnable{
         fileFields.forEach(name -> {
             var obj = meta.get(name);
             var text = switch (name) {
-                case "size" -> MyUtil.fileSizeToString((Long) obj);
+                case "size" -> MyUtil.fileSizeToString((long) obj);
                 case "like" -> HEART.repeat((int) obj);
                 default -> (String) obj;
             };
@@ -367,19 +365,63 @@ public class WuliuSearch implements Runnable{
         }
     }
 
+    private Optional<Simplemeta> getOldMeta() {
+        var fileID = fileFormFields.get("id").getText();
+        if (fileID.isBlank() || fileID.equals("id")) {
+            JOptionPane.showMessageDialog(frame, "請先選擇檔案");
+            return Optional.empty();
+        }
+        var oldMetaOpt = db.getMetaByID(fileID);
+        if (oldMetaOpt.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "找不到ID: " + fileID);
+        }
+        return oldMetaOpt;
+    }
+
+    class ExportBtnListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            var oldMetaOpt = getOldMeta();
+            if (oldMetaOpt.isEmpty()) return;
+            var oldMeta = oldMetaOpt.get();
+
+            var exportType = JOptionPane.showInputDialog(
+                    frame,
+                    "Select what to export please:",
+                    "Export",
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    new Object[]{"file", "meta", "file+meta"},
+                    "file"
+            );
+            System.out.println(exportType);
+        }
+
+        private Optional<String> checkSizeLimit(long size) {
+            long limit = projInfo.exportSizeLimit * MB;
+            if (size > limit) {
+                var sizeStr = MyUtil.fileSizeToString(size);
+                return Optional.of("檔案體積(%s) 超過上限(%s), 請手動導出。"
+                        .formatted(sizeStr, projInfo.exportSizeLimit));
+            }
+            return Optional.empty();
+        }
+
+        private void exportFile(Simplemeta meta) {
+            var err = checkSizeLimit(meta.size);
+            if (err.isPresent()) {
+                JOptionPane.showMessageDialog(frame, err.get());
+                return;
+            }
+        }
+    }
+
     class RenameBtnListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-            var fileID = fileFormFields.get("id").getText();
-            if (fileID.isBlank() || fileID.equals("id")) {
-                JOptionPane.showMessageDialog(frame, "請先選擇檔案");
-                return;
-            }
-            var result = db.getMetaByID(fileID);
-            if (result.isEmpty()) {
-                JOptionPane.showMessageDialog(frame, "找不到ID: " + fileID);
-                return;
-            }
+            var oldMetaOpt = getOldMeta();
+            if (oldMetaOpt.isEmpty()) return;
+            var oldMeta = oldMetaOpt.get();
 
             var oldName = fileFormFields.get("filename").getText();
             var newName = JOptionPane.showInputDialog("new filename:", oldName);
@@ -389,7 +431,6 @@ public class WuliuSearch implements Runnable{
                 return;
             }
 
-            var oldMeta = result.get();
             var err = checkFilename(newName);
             if (err.isPresent()) {
                 JOptionPane.showMessageDialog(frame, err.get());

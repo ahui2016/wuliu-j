@@ -18,6 +18,7 @@ import java.util.Map;
 public class MyUtil {
     public static final String RepoURL = "https://github.com/ahui2016/wuliu-j";
     public static final int Day = 24 * 60 * 60;
+    public static final int MB = 1024 * 1024;
     public static final DateTimeFormatter RFC3339 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static final Path INPUT_PATH = Path.of("input");
