@@ -13,10 +13,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.HashMap;
+import java.nio.file.Path;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.regex.Pattern;
 
 public class WuliuSearch implements Runnable{
@@ -25,6 +24,7 @@ public class WuliuSearch implements Runnable{
     private static final String HEART = "❤️";
     private static final int RESULT_LIST_HEIGHT = 550;
     private static final Integer DEFAULT_RESULT_LIMIT = 23;
+    private static final int EXPORT_AMOUNT_LIMIT = 25; // 批量導出檔案數量上限
     private static final int PIC_SIZE = 250;
     private static final int MB = MyUtil.MB;
 
@@ -381,38 +381,89 @@ public class WuliuSearch implements Runnable{
     class ExportBtnListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-            var oldMetaOpt = getOldMeta();
-            if (oldMetaOpt.isEmpty()) return;
-            var oldMeta = oldMetaOpt.get();
-
-            var exportType = JOptionPane.showInputDialog(
+            final String listed_files = "listed files";
+            var userInput = JOptionPane.showInputDialog(
                     frame,
                     "Select what to export please:",
                     "Export",
                     JOptionPane.QUESTION_MESSAGE,
                     null,
-                    new Object[]{"file", "meta", "file+meta"},
+                    new Object[]{"file", "meta", "file+meta", listed_files},
                     "file"
             );
-            System.out.println(exportType);
+            if (userInput == null) return;
+            var exportType = (String) userInput;
+
+            var meta = new Simplemeta();
+            if (!exportType.equals(listed_files)) {
+                var metaOpt = getOldMeta();
+                if (metaOpt.isEmpty()) return;
+                meta = metaOpt.get();
+            }
+            var msg = switch (exportType) {
+                case "file" -> exportFile(meta);
+                case "meta" -> exportMeta(meta);
+                case "file+meta" -> exportFileAndMeta(meta);
+                case listed_files -> exportListedFiles();
+                default -> "[warning] Unknown Selection";
+            };
+            msg = "[Project Root] %s%n%s".formatted(Path.of("").toAbsolutePath(), msg);
+            JOptionPane.showMessageDialog(frame, msg);
         }
 
-        private Optional<String> checkSizeLimit(long size) {
+        private Optional<String> checkSizeLimit(Simplemeta meta) {
             long limit = projInfo.exportSizeLimit * MB;
-            if (size > limit) {
-                var sizeStr = MyUtil.fileSizeToString(size);
-                return Optional.of("檔案體積(%s) 超過上限(%s), 請手動導出。"
-                        .formatted(sizeStr, projInfo.exportSizeLimit));
+            if (meta.size > limit) {
+                return Optional.of("檔案體積超過上限(%s MB), 請手動導出: [%s] %s"
+                        .formatted(projInfo.exportSizeLimit, meta.id, meta.filename));
             }
             return Optional.empty();
         }
 
-        private void exportFile(Simplemeta meta) {
-            var err = checkSizeLimit(meta.size);
-            if (err.isPresent()) {
-                JOptionPane.showMessageDialog(frame, err.get());
-                return;
+        private String exportListedFiles() {
+            if (result.size() > EXPORT_AMOUNT_LIMIT) {
+                return "列表中有 %d 個檔案，超過批量導出上限 (%d 個)".formatted(result.size(), EXPORT_AMOUNT_LIMIT);
             }
+            List<String> messages = new ArrayList<>();
+            for (var meta : result) {
+                messages.add(exportFile(meta));
+            }
+            return String.join("\n", messages);
+        }
+
+        private String exportFileAndMeta(Simplemeta meta) {
+            var msg1 = exportFile(meta);
+            var msg2 = exportMeta(meta);
+            return msg1 + "\n" + msg2;
+        }
+
+        private String exportFile(Simplemeta meta) {
+            var err = checkSizeLimit(meta);
+            if (err.isPresent()) {
+                return err.get();
+            }
+            var src = MyUtil.FILES_PATH.resolve(meta.filename);
+            var dst = MyUtil.BUFFER_PATH.resolve(meta.filename);
+            return exportFileHelper(src, dst);
+        }
+
+        private String exportMeta(Simplemeta meta) {
+            var src = MyUtil.getSimplemetaPath(meta.filename);
+            var dst = MyUtil.BUFFER_PATH.resolve(src.getFileName());
+            return exportFileHelper(src, dst);
+        }
+
+        private String exportFileHelper(Path src, Path dst) {
+            if (Files.exists(dst)) {
+                return "[warning] file exists: " + dst;
+            }
+            String msg = "Export => " + dst;
+            try {
+                Files.copy(src, dst);
+            } catch (IOException e) {
+                msg += "\n" + e.getMessage();
+            }
+            return msg;
         }
     }
 
