@@ -44,10 +44,5 @@ Java version of Wuliu File Manager
 
 ## TODO
 
-- export/delete 功能整合到简单的 search 页面中
-- WuliuSearch 的 date prefix 默认是 utime
-  - 但如果选择了 ctime, 那么 date prefix 就是 ctime
-  - rename 功能也整合到 search 页面，通过弹出对话框实现
-- WuliuEditMeta 和 WuliuRename 啟動時列出最近檔案
 - WuliuList 列出全部 label 和 notes
 

@@ -65,6 +65,14 @@ public class DB {
                       .list());
     }
 
+    public List<String> getRecentNotes(int limit) {
+        return jdbi.withHandle(handle ->
+                handle.select(Stmt.GET_RECENT_NOTES)
+                        .bind("limit", limit)
+                        .mapTo(String.class)
+                        .list());
+    }
+
     public List<Simplemeta> searchFilenameLimit(String filename, int limit) {
         var result = jdbi.withHandle(handle ->
                 handle.select(Stmt.SEARCH_FILENAME_LIMIT)

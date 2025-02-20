@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
-public class WuliuSearch implements Runnable{
+public class WuliuSearch implements Runnable {
     private static DB db;
     private static ProjectInfo projInfo;
     private static final String HEART = "❤️";

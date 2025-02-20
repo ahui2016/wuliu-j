@@ -18,6 +18,7 @@ public class Stmt {
         
         CREATE INDEX IF NOT EXISTS idx_simplemeta_size     ON simplemeta(size);
         CREATE INDEX IF NOT EXISTS idx_simplemeta_label    ON simplemeta(label);
+        CREATE INDEX IF NOT EXISTS idx_simplemeta_notes    ON simplemeta(notes);
         CREATE INDEX IF NOT EXISTS idx_simplemeta_ctime    ON simplemeta(ctime);
         CREATE INDEX IF NOT EXISTS idx_simplemeta_utime    ON simplemeta(utime);
         
@@ -58,6 +59,11 @@ public class Stmt {
 
     public static final String GET_RECENT_LABELS = """
         SELECT DISTINCT label FROM simplemeta
+        ORDER BY utime DESC LIMIT :limit;
+        """;
+
+    public static final String GET_RECENT_NOTES = """
+        SELECT DISTINCT notes FROM simplemeta
         ORDER BY utime DESC LIMIT :limit;
         """;
 
