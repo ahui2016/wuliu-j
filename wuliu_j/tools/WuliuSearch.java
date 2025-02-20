@@ -18,6 +18,8 @@ import java.util.*;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 public class WuliuSearch implements Runnable{
     private static DB db;
     private static ProjectInfo projInfo;
@@ -69,11 +71,12 @@ public class WuliuSearch implements Runnable{
         resultList.addMouseListener(new DoubleClickAdapter());
         renameBtn.addActionListener(new RenameBtnListener());
         exportBtn.addActionListener(new ExportBtnListener());
+        deleteBtn.addActionListener(new DeleteBtnListener());
         loadRecentFiles();
         searchTF.requestFocusInWindow();
     }
 
-    public void createGUI() {
+    private void createGUI() {
         frame = new JFrame("Wuliu Search");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -462,6 +465,41 @@ public class WuliuSearch implements Runnable{
                 Files.copy(src, dst);
             } catch (IOException e) {
                 msg += "\n" + e.getMessage();
+            }
+            return msg;
+        }
+    }
+
+    class DeleteBtnListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            var metaOpt = getOldMeta();
+            if (metaOpt.isEmpty()) return;
+            var meta = metaOpt.get();
+            int n = JOptionPane.showConfirmDialog(frame, "要刪除這個檔案嗎:\n"+meta.filename);
+            if (n != JOptionPane.YES_OPTION) {
+                return;
+            }
+            var file = MyUtil.FILES_PATH.resolve(meta.filename);
+            var metaFile = MyUtil.getSimplemetaPath(meta.filename);
+            var msg = "[Project Root] " + Path.of("").toAbsolutePath() + "\n";
+            msg += moveFileToRecycle(file);
+            msg += moveFileToRecycle(metaFile);
+            db.deleteSimplemeta(meta.id);
+            JOptionPane.showMessageDialog(frame, msg);
+            resetFileForm();
+        }
+
+        private String moveFileToRecycle(Path file) {
+            if (Files.notExists(file)) {
+                return "Not Found => " + file + "\n";
+            }
+            var dst = MyUtil.RECYCLEBIN_PATH.resolve(file.getFileName());
+            var msg = "Move => " + dst + "\n";
+            try {
+                Files.move(file, dst, REPLACE_EXISTING);
+            } catch (IOException e) {
+                msg += e.getMessage() + "\n";
             }
             return msg;
         }

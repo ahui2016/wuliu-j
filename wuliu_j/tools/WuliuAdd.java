@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 
 public class WuliuAdd implements Runnable{
     private static DB db;
@@ -26,12 +27,14 @@ public class WuliuAdd implements Runnable{
     private JTextField filenameText;
     private JTextField labelText;
     private JTextField notesText;
+    private JButton submitBtn;
 
     private Path currentFile;
     private Simplemeta currentMeta;
 
     public static void main(String[] args) throws IOException {
         initAndCheck();
+        checkInputFileFirstTime();
         SwingUtilities.invokeLater(new WuliuAdd());
     }
 
@@ -41,12 +44,42 @@ public class WuliuAdd implements Runnable{
         db = new DB(MyUtil.WULIU_J_DB);
     }
 
+    static void fileMustNotExist(Simplemeta meta) {
+        MyUtil.pathMustNotExists(MyUtil.FILES_PATH.resolve(meta.filename));
+        MyUtil.pathMustNotExists(MyUtil.getSimplemetaPath(meta.filename));
+        var opt = db.getMetaByChecksum(meta.checksum);
+        if (opt.isPresent()) {
+            var conflict = opt.get();
+            System.out.println("已存在相同內容的檔案");
+            System.out.println("input: " + meta.filename);
+            System.out.println("files: " + conflict.filename);
+            System.exit(0);
+        }
+    }
+
+    static void checkInputFileFirstTime() {
+        try (var paths = Files.list(MyUtil.INPUT_PATH)) {
+            var fileOpt = paths.filter(Files::isRegularFile).findAny();
+            if (fileOpt.isEmpty()) {
+                System.out.println("[warning] 在input資料夾中未發現檔案");
+                System.exit(0);
+            }
+            var file = fileOpt.get();
+            var meta = new Simplemeta(file);
+            fileMustNotExist(meta);
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            System.exit(1);
+        }
+    }
+
     private void reset() {
         loadCurrentFile();
         filenameText.setText(currentFile.getFileName().toString());
         resetPreviewArea();
         labels = db.getRecentLabels(recentLabelsLimit);
         labelList.setListData(labels.toArray(new String[0]));
+        labelText.requestFocusInWindow();
     }
 
     private void resetPreviewArea() {
@@ -66,28 +99,40 @@ public class WuliuAdd implements Runnable{
     }
 
     private void loadCurrentFile() {
-        currentFile = MyUtil.getOneFileFrom(MyUtil.INPUT_PATH);
+        var currentFileOpt = getOneFileFromInput();
+        if (currentFileOpt.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "[warning] 在input資料夾中未發現檔案");
+            System.exit(0);
+        }
+        currentFile = currentFileOpt.get();
         currentMeta = new Simplemeta(currentFile);
         fileMustNotExist(currentMeta);
     }
 
-    private void fileMustNotExist(Simplemeta meta) {
-        MyUtil.pathMustNotExists(MyUtil.FILES_PATH.resolve(meta.filename));
-        MyUtil.pathMustNotExists(MyUtil.getSimplemetaPath(meta.filename));
-        var opt = db.getMetaByChecksum(meta.checksum);
-        if (opt.isPresent()) {
-            var conflict = opt.get();
-            System.out.println("已存在相同內容的檔案");
-            System.out.println("input: " + meta.filename);
-            System.out.println("files: " + conflict.filename);
-            System.exit(0);
+    /**
+     * 從 input 資料夾中獲取一個檔案, 忽略 input 中的子資料夾。
+     */
+    private Optional<Path> getOneFileFromInput() {
+        Optional<Path> fileOpt = Optional.empty();
+        try (var paths = Files.list(MyUtil.INPUT_PATH)) {
+            fileOpt = paths.filter(Files::isRegularFile).findAny();
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(frame, e.getMessage());
+            System.out.println(e.getMessage());
+            System.exit(1);
         }
+        return fileOpt;
     }
 
     @Override
     public void run() {
-        loadCurrentFile();
+        createGUI();
+        labelList.addMouseListener(new DoubleClickAdapter());
+        submitBtn.addActionListener(new SubmitBtnListener());
+        reset();
+    }
 
+    private void createGUI() {
         frame = new JFrame("Wuliu Add");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -98,18 +143,14 @@ public class WuliuAdd implements Runnable{
         pane_2.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         previewArea = new JLabel();
-        resetPreviewArea();
         previewArea.setBorder(new EmptyBorder(10, 10, 10, 10));
         pane_1.add(previewArea);
 
         var filenamePane = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        var filenameLabel = new JLabel("Filename:");
-        filenameText = new JTextField(20);
+        filenameText = new JTextField(22);
         filenameText.setFont(MyUtil.FONT_18);
-        filenamePane.add(filenameLabel);
         filenamePane.add(filenameText);
         pane_1.add(filenamePane);
-        filenameText.setText(currentFile.getFileName().toString());
         filenameText.setEditable(false);
 
         var labelPane = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -136,17 +177,14 @@ public class WuliuAdd implements Runnable{
         });
         pane_1.add(clearBtn);
 
-        var submitBtn = new JButton("Submit");
-        submitBtn.addActionListener(new SubmitBtnListener());
+        submitBtn = new JButton("Submit");
         pane_1.add(submitBtn);
 
         JLabel recentLabelsTitle = new JLabel("Recent Labels:");
         // recentLabelsTitle.setBorder(BorderFactory.createLineBorder(Color.BLACK, 3));
         pane_2.add(recentLabelsTitle);
 
-        labels = db.getRecentLabels(recentLabelsLimit);
-        labelList = new JList<>(labels.toArray(new String[0]));
-        labelList.addMouseListener(new DoubleClickAdapter());
+        labelList = new JList<>();
         labelList.setFont(MyUtil.FONT_18);
         labelList.setFixedCellWidth(250);
         pane_2.add(labelList);
@@ -161,12 +199,6 @@ public class WuliuAdd implements Runnable{
         frame.setSize(700, 550);
         frame.setLocationRelativeTo(null); // 窗口居中
         frame.setVisible(true);
-
-        frame.addWindowFocusListener(new WindowAdapter() {
-            public void windowGainedFocus(WindowEvent e) {
-                labelText.requestFocusInWindow();
-            }
-        });
     }
 
     class DoubleClickAdapter extends MouseAdapter {

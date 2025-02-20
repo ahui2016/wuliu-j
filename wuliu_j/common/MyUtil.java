@@ -25,6 +25,7 @@ public class MyUtil {
     public static final Path FILES_PATH = Path.of("files");
     public static final Path BUFFER_PATH = Path.of("buffer");
     public static final Path SIMPLEMETA_PATH = Path.of("simplemeta");
+    public static final Path RECYCLEBIN_PATH = Path.of("recyclebin");
     public static final String PROJECT_JSON = "project.json";
     public static final Path PROJ_INFO_PATH = Path.of(PROJECT_JSON);
     public static final String WULIU_J_DB = "wuliu_j.db";
@@ -111,22 +112,6 @@ public class MyUtil {
             return list;
         }
         throw new RuntimeException(String.format("%s is not a string list", key));
-    }
-
-    /**
-     * 從 folder 獲取一個檔案, 忽略 folder 中的資料夾。
-     */
-    public static Path getOneFileFrom(Path folder) {
-        try (var paths = Files.list(folder)) {
-            var maybe = paths.filter(Files::isRegularFile).findAny();
-            if (maybe.isEmpty()) {
-                System.err.printf("ERROR! 在%s資料夾中未發現檔案%n", folder);
-                System.exit(0);
-            }
-            return maybe.get();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public static List<String> getFilenamesFrom(Path folder) {
