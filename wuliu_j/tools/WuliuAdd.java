@@ -185,6 +185,7 @@ public class WuliuAdd implements Runnable{
         pane_2.add(recentLabelsTitle);
 
         labelList = new JList<>();
+        labelList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         labelList.setFont(MyUtil.FONT_18);
         labelList.setFixedCellWidth(250);
         pane_2.add(labelList);

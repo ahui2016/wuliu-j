@@ -140,6 +140,7 @@ public class WuliuSearch implements Runnable {
         pane_2.add(searchBtn);
 
         resultList = new JList<>();
+        resultList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         resultList.setFont(MyUtil.FONT_16);
         resultList.setFixedCellWidth(400);
         var scrollPane = new JScrollPane(

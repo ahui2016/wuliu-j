@@ -82,6 +82,7 @@ public class WuliuEditMeta implements Runnable {
         pane_1.add(searchFilenameBtn);
 
         idFileList = new JList<>();
+        idFileList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         idFileList.setFont(MyUtil.FONT_16);
         idFileList.setFixedCellWidth(400);
         pane_1.add(idFileList);
