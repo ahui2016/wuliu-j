@@ -9,6 +9,36 @@ Java version of Wuliu File Manager
 - `java -cp ".;classes/*" wuliu_j.tools.WuliuDB`
 - `java -cp ".;classes/*" wuliu_j.tools.WuliuAdd`
 - `java -cp ".;classes/*" wuliu_j.tools.WuliuEditMeta`
+- `java -cp ".;classes/*" wuliu_j.tools.WuliuSearch`
+- `java -cp ".;classes/*" wuliu_j.tools.WuliuChecksum`
+- `java -cp ".;classes/*" wuliu_j.tools.WuliuLabelNotes`
+- `java -cp ".;classes/*" wuliu_j.tools.WuliuOverwrite`
+
+
+## 从旧版 wuliu 升级
+
+**特別注意**
+
+- 執行 MetaToSimple 之前, 請先執行 `wuliu-checksum` 檢查舊專案及其備份專案,
+  因為執行 MetaToSimple 會更改摘要算法, 會重新計算摘要。
+- 如果有備份專案, 請先備份, 因為升級後會忘記舊的備份狀態, 一律當作已完整備份。
+
+升級操作:
+
+1. 如果你已在使用 <https://github.com/ahui2016/wuliu>
+2. 那么，可下载 <https://github.com/ahui2016/wuliu-j>, 把 wuliu-j 中的
+   wuliu_j, classes, simplemeta 三个资料夹复制到旧项目的根目录下
+3. 执行 `java -cp ".;classes/*" wuliu_j.tools.MetaToSimple`
+   把 metadata 資料夾中的 json 檔案轉換為 simplemeta。
+4. 執行 `java -cp ".;classes/*" wuliu_j.tools.WuliuDB -init` 生成 wuliu_j.db
+5. 如果有備份專案, 請手動把 wuliu_j.db 和 simplemeta 複製到備份專案中。
+
+经过上述操作，就能开始正常使用 wuliu-j
+
+注意，旧版 wuliu 的核心关键在于 metadata 資料夾中的 json 檔案,
+而 wuliu-j 的核心关键在于 simplemeta 資料夾中的 json 檔案, 而这两种 json 档案的结构不同，
+因此一旦开始使用 wuliu-j, 就只能使用 simplemeta, 这意味着无法再降级到旧版 wuliu.
+
 
 ## MetaToSimple
 
@@ -18,8 +48,9 @@ Java version of Wuliu File Manager
 
 **特別注意**
 
-執行 MetaToSimple 之前, 請先執行 `wuliu-checksum` 進行檢查,
-因為執行 MetaToSimple 會更改摘要算法。
+- 執行 MetaToSimple 之前, 請先執行 `wuliu-checksum` 檢查舊專案及其備份專案,
+  因為執行 MetaToSimple 會更改摘要算法, 會重新計算摘要。
+- 如果有備份專案, 請先備份, 因為升級後會忘記舊的備份狀態, 一律當作已完整備份。
 
 
 ## WuliuSearch
@@ -38,11 +69,11 @@ Java version of Wuliu File Manager
 - filename/label/notes 表面上支持自由组合，但暂时只支持：
   - 三者单独搜寻（选其一）
   - 三者一起搜寻（全选，如果只选择其中两个，也视为全选）
-- 如果搜尋框無內容, 則列出最新的檔案
+  - 如果搜尋框無內容, 則列出最新的檔案
   - 可選擇 ctime 或 utime, 目前只支持 utime
 
 
 ## TODO
 
-- WuliuList 列出全部 label 和 notes
+- WuliuLabelNotes 增加搜索功能或与 WuliuSearch 合并
 

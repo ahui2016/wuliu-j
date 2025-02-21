@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class MyUtil {
     public static final String RepoURL = "https://github.com/ahui2016/wuliu-j";
@@ -49,6 +50,13 @@ public class MyUtil {
         if (Files.notExists(path)) {
             throw new RuntimeException("Not Found: " + path);
         }
+    }
+
+    public static Optional<String> checkPathExists(Path path) {
+        if (Files.notExists(path)) {
+            return Optional.of("Not Found: " + path);
+        }
+        return Optional.empty();
     }
 
     /**

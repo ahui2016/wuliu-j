@@ -185,7 +185,13 @@ public class WuliuChecksum implements Runnable {
                 int i = projList.locationToIndex(event.getPoint());
                 projRoot = Path.of(projInfo.projects.get(i));
                 orphans = new MyOrphans(projRoot, msgArea);
-                db = new DB(projRoot.resolve(MyUtil.WULIU_J_DB).toString());
+                var dbPath = projRoot.resolve(MyUtil.WULIU_J_DB);
+                var errOpt = MyUtil.checkPathExists(dbPath);
+                if (errOpt.isPresent()) {
+                    JOptionPane.showMessageDialog(frame, errOpt.get());
+                    System.exit(0);
+                }
+                db = new DB(dbPath.toString());
                 currentProjTF.setText(projRoot.toAbsolutePath().normalize().toString());
                 printInfo(true);
             }
@@ -198,7 +204,13 @@ public class WuliuChecksum implements Runnable {
             if (event.getClickCount() == 2) {
                 int i = projList2.locationToIndex(event.getPoint());
                 projRoot2 = Path.of(projects2.get(i));
-                db2 = new DB(projRoot.resolve(MyUtil.WULIU_J_DB).toString());
+                var dbPath = projRoot2.resolve(MyUtil.WULIU_J_DB);
+                var errOpt = MyUtil.checkPathExists(dbPath);
+                if (errOpt.isPresent()) {
+                    JOptionPane.showMessageDialog(frame, errOpt.get());
+                    System.exit(0);
+                }
+                db2 = new DB(dbPath.toString());
                 project2TF.setText(projRoot2.toAbsolutePath().normalize().toString());
                 proj_1_damagedIds = db.getDamagedIds();
                 msgArea2.setText("在專案 1 中發現 %d 個己損壞的檔案%n".formatted(proj_1_damagedIds.size()));
@@ -251,7 +263,9 @@ public class WuliuChecksum implements Runnable {
             try {
                 Files.copy(filepath2, filepath1, StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException ex) {
-                throw new RuntimeException(ex);
+                System.out.println(ex.getMessage());
+                JOptionPane.showMessageDialog(frame, ex.getMessage());
+                System.exit(1);
             }
             db.updateCheckedDamaged(file1.id, now, 0);
         }

@@ -18,7 +18,7 @@ import java.util.Optional;
 public class WuliuAdd implements Runnable{
     private static DB db;
     private static final int pictureSizeLimit = 300;
-    private static final int recentLabelsLimit = 10;
+    private static final int recentLabelsLimit = 30;
 
     private JFrame frame;
     private List<String> labels;
@@ -188,7 +188,12 @@ public class WuliuAdd implements Runnable{
         labelList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         labelList.setFont(MyUtil.FONT_18);
         labelList.setFixedCellWidth(250);
-        pane_2.add(labelList);
+        var scrollPane = new JScrollPane(
+                labelList,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setPreferredSize(new Dimension(260, 500));
+        pane_2.add(scrollPane);
 
         // 两个 alignment 必须同时设置才有效
         // https://docs.oracle.com/javase/tutorial/uiswing/layout/box.html

@@ -155,8 +155,9 @@ public class WuliuBackup implements Runnable {
                 var bkProjRoot = Path.of(bkProjects.get(i));
                 try {
                     projStat_2 = new ProjectStatus(bkProjRoot);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(null, e.getMessage());
+                    return;
                 }
                 proj2TF.setText(bkProjRoot.toString());
                 printStatus();
@@ -201,6 +202,13 @@ class ProjectStatus {
     ProjectStatus(Path projRoot) throws IOException {
         var dbPath = projRoot.resolve(MyUtil.WULIU_J_DB);
         MyUtil.pathMustExists(dbPath);
+/*
+        var errOpt = MyUtil.checkPathExists(dbPath);
+        if (errOpt.isPresent()) {
+            JOptionPane.showMessageDialog(null, errOpt.get());
+            return;
+        }
+*/
         db = new DB(dbPath.toString());
         this.projRoot = projRoot;
         projInfo = ProjectInfo.fromJsonFile(projRoot.resolve(MyUtil.PROJECT_JSON));
