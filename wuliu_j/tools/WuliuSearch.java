@@ -6,6 +6,7 @@ import wuliu_j.common.ProjectInfo;
 import wuliu_j.common.Simplemeta;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,12 +24,17 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 public class WuliuSearch implements Runnable {
     private static DB db;
     private static ProjectInfo projInfo;
+
     private static final String HEART = "❤️";
     private static final int RESULT_LIST_HEIGHT = 550;
+    private static final int PANEL_HEIGHT = 550 + 70;
     private static final Integer DEFAULT_RESULT_LIMIT = 23;
     private static final int EXPORT_AMOUNT_LIMIT = 25; // 批量導出檔案數量上限
     private static final int PIC_SIZE = 250;
     private static final int MB = MyUtil.MB;
+
+    private boolean isMoreVisible = false;
+    private boolean isMoreListsLoaded = false;
 
     private JFrame frame;
     private JCheckBox cBoxFilename;
@@ -37,8 +43,10 @@ public class WuliuSearch implements Runnable {
     private final List<String> radioButtons = List.of(
             "id", "like", "size", "ctime", "utime");
     private final ButtonGroup btnGroup = new ButtonGroup();
+    private JRadioButton rBtnUTime;
     private JTextField datePrefixTF;
     private JTextField resultLimitTF;
+    private JButton moreBtn;
     private JTextField searchTF;
     private JButton searchBtn;
 
@@ -53,6 +61,10 @@ public class WuliuSearch implements Runnable {
     private JButton renameBtn;
     private JButton exportBtn;
     private JButton deleteBtn;
+
+    private JPanel pane_more;
+    private JList<String> labelList;
+    private JList<String> notesList;
 
     public static void main(String[] args) throws IOException {
         initAndCheck();
@@ -69,6 +81,8 @@ public class WuliuSearch implements Runnable {
     public void run() {
         createGUI();
         resultList.addMouseListener(new DoubleClickAdapter());
+        moreBtn.addActionListener(new MoreBtnListener());
+        searchBtn.addActionListener(new SearchBtnListener());
         renameBtn.addActionListener(new RenameBtnListener());
         exportBtn.addActionListener(new ExportBtnListener());
         deleteBtn.addActionListener(new DeleteBtnListener());
@@ -77,6 +91,9 @@ public class WuliuSearch implements Runnable {
     }
 
     private void createGUI() {
+        final int labelListWidth = 250;
+        final int labelListHeight = RESULT_LIST_HEIGHT;
+
         frame = new JFrame("Wuliu Search");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -85,15 +102,18 @@ public class WuliuSearch implements Runnable {
         ).forEach(k -> UIManager.put(k, MyUtil.FONT_18));
 
         var pane_1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        pane_1.setPreferredSize(new Dimension(120, PANEL_HEIGHT));
         var pane_r = new JPanel();
         pane_r.setLayout(new BoxLayout(pane_r, BoxLayout.LINE_AXIS));
         var pane_2 = new JPanel();
         var pane_3 = new JPanel();
-        pane_r.setPreferredSize(new Dimension(750, RESULT_LIST_HEIGHT+70));
-        pane_2.setPreferredSize(new Dimension(420, RESULT_LIST_HEIGHT+70));
-        pane_3.setPreferredSize(new Dimension(320, RESULT_LIST_HEIGHT+70));
+        pane_r.setPreferredSize(new Dimension(730, PANEL_HEIGHT));
+        pane_2.setPreferredSize(new Dimension(420, PANEL_HEIGHT));
+        pane_3.setPreferredSize(new Dimension(310, PANEL_HEIGHT));
         pane_r.add(pane_2);
         pane_r.add(pane_3);
+        pane_more = new JPanel(new GridLayout(1, 2, 10, 10));
+        pane_more.setPreferredSize(new Dimension(labelListWidth*2+50, PANEL_HEIGHT));
 
         // pane_1
         var pane_boxes = new JPanel();
@@ -116,7 +136,10 @@ public class WuliuSearch implements Runnable {
             // rBtn.setFont(MyUtil.FONT_18);
             btnGroup.add(rBtn);
             pane_radio.add(rBtn);
-            if (name.equals("utime")) rBtn.setSelected(true);
+            if (name.equals("utime")) {
+                rBtn.setSelected(true);
+                rBtnUTime = rBtn;
+            }
             if (name.equals("ctime")) rBtn.setEnabled(false);
         });
         pane_1.add(pane_radio);
@@ -132,10 +155,13 @@ public class WuliuSearch implements Runnable {
         pane_1.add(new JLabel("result limit"));
         pane_1.add(resultLimitTF);
 
+        pane_1.add(Box.createRigidArea(new Dimension(90, 20)));
+        moreBtn = new JButton("more");
+        pane_1.add(moreBtn);
+
         // pane_2
         searchTF = new JTextField(22);
         searchBtn = new JButton("search");
-        searchBtn.addActionListener(new SearchBtnListener());
         pane_2.add(searchTF);
         pane_2.add(searchBtn);
 
@@ -165,7 +191,7 @@ public class WuliuSearch implements Runnable {
             fileFormFields.put(name, field);
         });
 
-        pane_3.add(Box.createRigidArea(new Dimension(350, 10)));
+        pane_3.add(Box.createRigidArea(new Dimension(300, 10)));
         renameBtn = new JButton("Rename");
         exportBtn = new JButton("Export");
         deleteBtn = new JButton("Delete");
@@ -173,15 +199,44 @@ public class WuliuSearch implements Runnable {
         pane_3.add(exportBtn);
         pane_3.add(deleteBtn);
 
+        // pane_more
+        var paneLeft = new JPanel(new FlowLayout());
+        paneLeft.add(new JLabel("Labels"));
+        labelList = new JList<>();
+        var labelListScroll = makeScrollPane(labelList, labelListWidth, labelListHeight);
+        paneLeft.add(labelListScroll);
+        pane_more.add(paneLeft);
+        var paneRight = new JPanel(new FlowLayout());
+        paneRight.add(new JLabel("Notes"));
+        notesList = new JList<>();
+        var notesListScroll = makeScrollPane(notesList, labelListWidth, labelListHeight);
+        paneRight.add(notesListScroll);
+        pane_more.add(paneRight);
+        pane_more.setVisible(isMoreVisible);
+
         // add panels to the frame
         var pane_top = new JPanel();
         pane_top.add(Box.createRigidArea(new Dimension(10, 10)));
         frame.add(pane_top, BorderLayout.NORTH);
-        frame.add(pane_1, BorderLayout.CENTER);
-        frame.add(pane_r, BorderLayout.EAST);
+        frame.add(pane_1, BorderLayout.WEST);
+        frame.add(pane_r, BorderLayout.CENTER);
+        frame.add(pane_more, BorderLayout.EAST);
         frame.setSize(900, RESULT_LIST_HEIGHT+120);
         frame.setLocationRelativeTo(null); // 窗口居中
         frame.setVisible(true);
+        frame.setResizable(false);
+    }
+
+    private JScrollPane makeScrollPane(JList<String> list, int listWidth, int height) {
+        list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        list.setFont(MyUtil.FONT_16);
+        list.setFixedCellWidth(listWidth);
+        var scrollPane = new JScrollPane(
+                list,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setPreferredSize(new Dimension(listWidth+10, height));
+        return scrollPane;
     }
 
     private void fillFileForm(Simplemeta file) {
@@ -315,18 +370,68 @@ public class WuliuSearch implements Runnable {
         resultList.setListData(listData);
     }
 
+    class MoreBtnListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (isMoreVisible) {
+                frame.setSize(900, RESULT_LIST_HEIGHT+120);
+                pane_more.setVisible(false);
+                isMoreVisible = false;
+                return;
+            }
+            if (!isMoreListsLoaded) {
+                var labelsLimit = 500;
+                var allLabels = db.getRecentLabels(labelsLimit);
+                labelList.setListData(allLabels.toArray(new String[0]));
+                labelList.addMouseListener(new LabelsDoubleClickAdapter());
+                var allNotes = db.getRecentNotes(labelsLimit);
+                notesList.setListData(allNotes.toArray(new String[0]));
+                notesList.addMouseListener(new LabelsDoubleClickAdapter());
+                isMoreListsLoaded = true;
+            }
+            frame.setSize(1450, RESULT_LIST_HEIGHT+120);
+            pane_more.setVisible(true);
+            isMoreVisible = true;
+        }
+    }
+
+    class LabelsDoubleClickAdapter extends MouseAdapter {
+        @Override
+        public void mouseClicked(MouseEvent event) {
+            if (event.getClickCount() == 2) {
+                cBoxFilename.setSelected(false);
+                rBtnUTime.setSelected(true);
+                String text;
+                var list = event.getComponent();
+                if (list == labelList) {
+                    text = labelList.getSelectedValue();
+                    cBoxLabel.setSelected(true);
+                    cBoxNotes.setSelected(false);
+                } else if (list == notesList) {
+                    text = notesList.getSelectedValue();
+                    cBoxLabel.setSelected(false);
+                    cBoxNotes.setSelected(true);
+                } else {
+                    text = "";
+                }
+                searchTF.setText(text);
+                searchBtn.doClick();
+            }
+        }
+    }
+
     class SearchBtnListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
             resultList.setEnabled(false);
             searchTF.setEditable(false);
             searchBtn.setEnabled(false);
-            var timer = new javax.swing.Timer(1000, _ -> run());
+            var timer = new javax.swing.Timer(1000, _ -> search());
             timer.setRepeats(false);
             timer.start();
         }
 
-        private void run() {
+        private void search() {
             var limit = Integer.parseInt(resultLimitTF.getText().strip());
             var radioSelection = btnGroup.getSelection().getActionCommand();
             switch (radioSelection) {
