@@ -83,6 +83,7 @@ public class WuliuChecksum implements Runnable {
 
         msgArea = new JTextArea(15, textCols);
         msgArea.setFont(MyUtil.FONT_16);
+        msgArea.setLineWrap(true);
         pane_1.add(new JScrollPane(msgArea,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER));

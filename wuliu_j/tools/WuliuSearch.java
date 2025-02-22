@@ -6,7 +6,6 @@ import wuliu_j.common.ProjectInfo;
 import wuliu_j.common.Simplemeta;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -712,12 +711,4 @@ public class WuliuSearch implements Runnable {
         sep.setPreferredSize(new Dimension(width, 2));
         return sep;
     }
-
-/*
-    private JTextField newTextField18(int columns) {
-        var tf = new JTextField(columns);
-        tf.setFont(MyUtil.FONT_18);
-        return tf;
-    }
-*/
 }

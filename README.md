@@ -2,6 +2,7 @@
 
 Java version of Wuliu File Manager 
 
+
 ## Java Commands
 
 - `javac -cp ".;classes/*" wuliu_j/common/*.java wuliu_j/tools/*.java`
@@ -11,7 +12,6 @@ Java version of Wuliu File Manager
 - `java -cp ".;classes/*" wuliu_j.tools.WuliuEditMeta`
 - `java -cp ".;classes/*" wuliu_j.tools.WuliuSearch`
 - `java -cp ".;classes/*" wuliu_j.tools.WuliuChecksum`
-- `java -cp ".;classes/*" wuliu_j.tools.WuliuLabelNotes`
 - `java -cp ".;classes/*" wuliu_j.tools.WuliuOverwrite`
 
 
@@ -27,11 +27,11 @@ Java version of Wuliu File Manager
 
 1. 如果你已在使用 <https://github.com/ahui2016/wuliu>
 2. 那么，可下载 <https://github.com/ahui2016/wuliu-j>, 把 wuliu-j 中的
-   wuliu_j, classes, simplemeta 三个资料夹复制到旧项目的根目录下
+   wuliu_j, classes 兩个资料夹复制到旧项目的根目录下
 3. 执行 `java -cp ".;classes/*" wuliu_j.tools.MetaToSimple`
-   把 metadata 資料夾中的 json 檔案轉換為 simplemeta。
+   把 metadata 資料夾中的 json 檔案轉換為 simplemeta （在 simplemeta 資料夾中）。
 4. 執行 `java -cp ".;classes/*" wuliu_j.tools.WuliuDB -init` 生成 wuliu_j.db
-5. 如果有備份專案, 請手動把 wuliu_j.db 和 simplemeta 複製到備份專案中。
+5. 如果有備份專案, 請先備份，再手動把 wuliu_j.db 和 simplemeta 複製到備份專案中。
 
 经过上述操作，就能开始正常使用 wuliu-j
 

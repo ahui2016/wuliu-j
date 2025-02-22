@@ -19,12 +19,14 @@ public class WuliuAdd implements Runnable{
     private static DB db;
     private static final int pictureSizeLimit = 300;
     private static final int recentLabelsLimit = 30;
+    private static final int textFieldColumns = 25;
 
     private JFrame frame;
     private List<String> labels;
     private JList<String> labelList;
     private JLabel previewArea;
     private JTextField filenameText;
+    private JTextField sizeText;
     private JTextField labelText;
     private JTextField notesText;
     private JButton submitBtn;
@@ -76,6 +78,7 @@ public class WuliuAdd implements Runnable{
     private void reset() {
         loadCurrentFile();
         filenameText.setText(currentFile.getFileName().toString());
+        sizeText.setText(MyUtil.fileSizeToString(currentFile.toFile().length()));
         resetPreviewArea();
         labels = db.getRecentLabels(recentLabelsLimit);
         labelList.setListData(labels.toArray(new String[0]));
@@ -147,15 +150,24 @@ public class WuliuAdd implements Runnable{
         pane_1.add(previewArea);
 
         var filenamePane = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        filenameText = new JTextField(22);
+        filenameText = new JTextField(textFieldColumns + 5);
         filenameText.setFont(MyUtil.FONT_18);
         filenamePane.add(filenameText);
         pane_1.add(filenamePane);
         filenameText.setEditable(false);
 
+        var sizePane = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        var sizeLabel = new JLabel("Size:");
+        sizeText = new JTextField(textFieldColumns);
+        sizeText.setFont(MyUtil.FONT_18);
+        sizePane.add(sizeLabel);
+        sizePane.add(sizeText);
+        pane_1.add(sizePane);
+        sizeText.setEditable(false);
+
         var labelPane = new JPanel(new FlowLayout(FlowLayout.LEFT));
         var labelLabel = new JLabel("Label:");
-        labelText = new JTextField(20);
+        labelText = new JTextField(textFieldColumns);
         labelText.setFont(MyUtil.FONT_18);
         labelPane.add(labelLabel);
         labelPane.add(labelText);
@@ -163,11 +175,13 @@ public class WuliuAdd implements Runnable{
 
         var notesPane = new JPanel(new FlowLayout(FlowLayout.LEFT));
         var notesLabel = new JLabel("Notes:");
-        notesText = new JTextField(20);
+        notesText = new JTextField(textFieldColumns);
         notesText.setFont(MyUtil.FONT_18);
         notesPane.add(notesLabel);
         notesPane.add(notesText);
         pane_1.add(notesPane);
+
+        pane_1.add(Box.createRigidArea(new Dimension(100, 5)));
 
         var clearBtn = new JButton("Clear");
         clearBtn.addActionListener(_ -> {
@@ -202,7 +216,7 @@ public class WuliuAdd implements Runnable{
 
         frame.add(BorderLayout.CENTER, pane_1);
         frame.add(BorderLayout.EAST, pane_2);
-        frame.setSize(700, 550);
+        frame.setSize(800, 600);
         frame.setLocationRelativeTo(null); // 窗口居中
         frame.setVisible(true);
     }
@@ -232,17 +246,20 @@ public class WuliuAdd implements Runnable{
                 var meta = currentMeta;
                 meta.label = labelText.getText();
                 meta.notes = notesText.getText();
+                var src = MyUtil.INPUT_PATH.resolve(meta.filename);
+                var dst = MyUtil.FILES_PATH.resolve(meta.filename);
+                MyUtil.pathMustExists(src);
+                MyUtil.pathMustNotExists(dst);
+                System.out.println("Add => " + dst);
+                Files.move(src, dst);
                 var metaPath = MyUtil.getSimplemetaPath(meta.filename);
                 System.out.println("Create => " + metaPath);
                 JSON.std.with(JSON.Feature.PRETTY_PRINT_OUTPUT)
                         .write(meta.toMap(), metaPath.toFile());
-                var src = MyUtil.INPUT_PATH.resolve(meta.filename);
-                var dst = MyUtil.FILES_PATH.resolve(meta.filename);
-                System.out.println("Add => " + dst);
-                Files.move(src, dst);
                 db.insertSimplemeta(meta.toMap());
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(frame, ex.getMessage());
+                System.exit(1);
             }
             JOptionPane.showMessageDialog(frame, "添加檔案成功！");
             reset();

@@ -10,6 +10,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.List;
 
 public class WuliuEditMeta implements Runnable {
@@ -35,7 +36,7 @@ public class WuliuEditMeta implements Runnable {
     private JTextField ctimeTF;
     private JTextField utimeTF;
 
-    private List<Simplemeta> files;
+    private ArrayList<Simplemeta> files;
     private JList<String> idFileList;
 
     public static void main(String[] args) throws IOException {
@@ -182,9 +183,9 @@ public class WuliuEditMeta implements Runnable {
     private void searchFilename() {
         var filename = filenameTF.getText();
         if (filename.isBlank()) {
-            files = db.getRecentMetaLimit(fileListLimit);
+            files = new ArrayList<>(db.getRecentMetaLimit(fileListLimit));
         } else {
-            files = db.searchFilenameLimit(filename, fileListLimit);
+            files = new ArrayList<>(db.searchFilenameLimit(filename, fileListLimit));
         }
         var idFilenames = metaToStringList(files);
         idFileList.setListData(idFilenames.toArray(new String[0]));
@@ -277,10 +278,11 @@ public class WuliuEditMeta implements Runnable {
             try {
                 updateMetaFile(fileID);
             } catch (IOException ex) {
-                throw new RuntimeException(ex);
+                JOptionPane.showMessageDialog(frame, ex.getMessage());
+                return;
             }
+            updateCache(fileID);
             JOptionPane.showMessageDialog(frame, "更新成功！");
-            System.exit(0);
         }
 
         private void updateMetaFile(String fileID) throws IOException {
@@ -290,6 +292,16 @@ public class WuliuEditMeta implements Runnable {
             System.out.println("Update => " + metaPath);
             Files.write(metaPath, metaJson.getBytes());
             System.out.println(metaJson);
+        }
+
+        private void updateCache(String fileID) {
+            for (int i=0; i < files.size(); i++) {
+                if (files.get(i).id.equals(fileID)) {
+                    var fileOpt = db.getMetaByID(fileID);
+                    files.set(i, fileOpt.orElseThrow());
+                    return;
+                }
+            }
         }
     }
 }
